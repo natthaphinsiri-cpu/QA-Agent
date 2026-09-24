@@ -1,0 +1,2876 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QA Agent — Requirement to Test Case</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
+<script>
+  if(window['pdfjs-dist/build/pdf'] || window.pdfjsLib){
+    (window.pdfjsLib || window['pdfjs-dist/build/pdf']).GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+<style>
+  :root{
+    --bg:#ECEEF1; --bg-panel:#E2E5EA; --paper:#F7F8FA; --paper-raised:#EFF1F4;
+    --line:#D6DADF; --line-soft:#E1E4E8;
+    --ink:#1E2430; --ink-dim:#5B6472; --ink-faint:#8A93A0;
+    --blueprint:#2563EB; --blueprint-dim:#93C5FD;
+    --deep-blue:#1D4ED8; --deep-blue-hover:#1E40AF; --deep-blue-border:#2563EB;
+    --amber:#B45309; --amber-dim:#FCD34A;
+    --green:#15803D; --green-dim:#86EFAC;
+    --red:#B91C1C; --red-dim:#FCA5A5;
+    --violet:#7C3AED;
+    --field:#FFFFFF;
+    --mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+    --sans:'IBM Plex Sans Thai', 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top, 0px);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14171C; --bg-panel:#1B1F26; --paper:#20252D; --paper-raised:#242A33;
+      --line:#343B46; --line-soft:#2B313B;
+      --ink:#E6E9EE; --ink-dim:#A4ACB8; --ink-faint:#737C89;
+      --blueprint:#60A5FA; --blueprint-dim:#1E3A8A;
+      --amber:#F59E0B; --amber-dim:#78350F;
+      --green:#4ADE80; --green-dim:#14532D;
+      --red:#F87171; --red-dim:#7F1D1D;
+      --violet:#A78BFA; --field:#1B1F26;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14171C; --bg-panel:#1B1F26; --paper:#20252D; --paper-raised:#242A33;
+    --line:#343B46; --line-soft:#2B313B;
+    --ink:#E6E9EE; --ink-dim:#A4ACB8; --ink-faint:#737C89;
+    --blueprint:#60A5FA; --blueprint-dim:#1E3A8A;
+    --amber:#F59E0B; --amber-dim:#78350F;
+    --green:#4ADE80; --green-dim:#14532D;
+    --red:#F87171; --red-dim:#7F1D1D;
+    --violet:#A78BFA; --field:#1B1F26;
+  }
+  html{ scroll-padding-top:env(safe-area-inset-top, 0px); }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--bg); color:var(--ink); font-family:var(--sans); min-height:100%; }
+  button, select, input, textarea{ transition: background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease; }
+  :focus-visible{ outline:2px solid var(--blueprint); outline-offset:2px; }
+  .app{ max-width:1500px; margin:0 auto; padding:22px 32px 56px; }
+
+  header{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    padding-bottom:16px; margin-bottom:18px; border-bottom:1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:center; gap:14px; }
+  .brand-mark{
+    width:52px; height:52px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-family:var(--mono); font-weight:700; font-size:18px;
+    background:linear-gradient(135deg, #2563EB, #1D4ED8); flex-shrink:0;
+  }
+  .brand-text h1{ margin:0; font-size:28px; font-weight:700; line-height:1.15; color:var(--ink); }
+  .brand-text p{ margin:4px 0 0; font-size:12.5px; color:var(--ink-dim); }
+
+  .user-chip{
+    display:flex; align-items:center; gap:8px; background:var(--paper); border:1px solid var(--line);
+    color:var(--ink); font-family:var(--sans); font-size:13px; font-weight:600;
+    padding:8px 14px; border-radius:10px; cursor:pointer;
+  }
+  .user-chip:hover{ border-color:var(--blueprint); }
+  .user-chip .avatar{
+    width:24px; height:24px; border-radius:50%; background:var(--blueprint); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;
+  }
+  .user-chip .change{ font-size:11.5px; color:var(--ink-faint); font-weight:500; }
+
+  .header-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .config-btn{
+    display:flex; align-items:center; gap:7px; background:var(--paper); border:1px solid var(--line); color:var(--ink-dim);
+    font-family:var(--sans); font-size:13px; font-weight:600; padding:9px 14px; border-radius:10px; cursor:pointer;
+  }
+  .config-btn:hover{ border-color:var(--blueprint); color:var(--ink); }
+  .config-btn .dot{ width:7px; height:7px; border-radius:50%; background:var(--ink-faint); }
+  .config-btn .dot.on{ background:var(--green); }
+  .config-btn .dot.saving{ background:var(--amber); }
+  .config-btn .dot.err{ background:var(--red); }
+  .role-chip{ font-size:12px; font-weight:700; color:var(--violet); border:1.5px solid var(--violet); border-radius:20px; padding:3px 10px; white-space:nowrap; }
+  .link-btn{ background:none; border:none; color:var(--blueprint); font-family:var(--sans); font-size:12.5px; font-weight:600; cursor:pointer; padding:4px 0; }
+  .link-btn:hover{ text-decoration:underline; }
+  .auth-or{ display:flex; align-items:center; gap:10px; color:var(--ink-faint); font-size:12px; margin:16px 0 10px; }
+  .auth-or::before, .auth-or::after{ content:''; flex:1; border-top:1px solid var(--line); }
+  .account-box{ border:1px solid var(--line); border-radius:10px; padding:12px; margin-top:14px; background:var(--bg-panel); font-size:12.5px; color:var(--ink-dim); display:flex; flex-direction:column; gap:8px; }
+  .account-box .row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .member-row{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-soft); }
+  .member-row:last-child{ border-bottom:none; }
+  .member-who{ flex:1; min-width:0; display:flex; flex-direction:column; font-size:13px; }
+  .member-who span{ font-size:11.5px; color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; }
+  .member-row .cell-select{ width:auto; }
+  .member-add{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  .member-add input{ flex:1; min-width:180px; background:var(--bg-panel); border:1px solid var(--line); color:var(--ink); font-family:var(--sans); font-size:13px; padding:8px 10px; border-radius:8px; }
+  .provider-tabs{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+  .provider-tab{
+    background:var(--bg-panel); border:1.5px solid var(--line); border-radius:8px; padding:9px 6px; cursor:pointer;
+    text-align:center; display:flex; flex-direction:column; gap:2px; font-family:var(--sans); color:var(--ink);
+  }
+  .provider-tab:hover{ border-color:var(--ink-faint); }
+  .provider-tab.active{ border-color:var(--blueprint); background:rgba(37,99,235,0.1); }
+  .provider-tab .p-name{ font-size:12.5px; font-weight:700; }
+  .provider-tab.active .p-name{ color:var(--blueprint); }
+  .provider-tab .p-sub{ font-size:10px; color:var(--ink-faint); }
+  .key-input-row{ display:flex; gap:8px; }
+  .key-input-row input{ flex:1; }
+  .toggle-visibility{ background:var(--bg-panel); border:1px solid var(--line); color:var(--ink-dim); border-radius:8px; padding:0 12px; cursor:pointer; font-family:var(--sans); font-size:12px; }
+  .env-note{ font-size:12px; line-height:1.55; border-radius:8px; padding:9px 11px; margin-bottom:14px; border:1px solid var(--amber-dim); color:var(--amber); background:rgba(180,83,9,0.07); }
+  .conn-status{ font-size:12px; padding:9px 11px; border-radius:7px; margin-top:12px; display:none; line-height:1.5; }
+  .conn-status.show{ display:block; }
+  .conn-status.ok{ border:1px solid var(--green-dim); color:var(--green); background:rgba(21,128,61,0.08); }
+  .conn-status.fail{ border:1px solid var(--red-dim); color:var(--red); background:rgba(185,28,28,0.08); }
+  .conn-status.testing{ border:1px solid var(--blueprint-dim); color:var(--blueprint); background:rgba(37,99,235,0.08); }
+
+  /* modals */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(6,10,14,0.6);
+    z-index:100; align-items:center; justify-content:center; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    background:var(--paper); border:1px solid var(--line); border-radius:16px;
+    width:100%; max-width:440px; padding:22px 24px; max-height:88vh; overflow-y:auto;
+    box-shadow:0 20px 50px rgba(15,23,42,0.18);
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .modal-head h3{ margin:0; font-size:17px; font-weight:700; }
+  .modal-close{ background:none; border:none; color:var(--ink-faint); font-size:22px; cursor:pointer; line-height:1; }
+  .modal-sub{ font-size:12.5px; color:var(--ink-dim); margin:0 0 16px; line-height:1.6; }
+  .field-group{ margin-bottom:14px; }
+  .field-group label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:6px; font-weight:600; }
+  .field-group input{
+    width:100%; background:var(--bg-panel); border:1px solid var(--line); color:var(--ink);
+    font-family:var(--sans); font-size:14px; padding:10px 12px; border-radius:8px; outline:none;
+  }
+  .field-group input:focus{ border-color:var(--blueprint); }
+  .field-hint{ font-size:11.5px; color:var(--ink-faint); margin-top:6px; line-height:1.5; }
+  .modal-actions{ display:flex; gap:8px; margin-top:18px; }
+  .modal-actions .btn{ flex:1; margin-top:0; }
+
+  /* project bar */
+  .project-bar{
+    display:flex; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap;
+    background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--blueprint); border-radius:12px;
+    padding:9px 14px;
+  }
+  .project-bar .p-label{ font-size:12px; color:var(--blueprint); font-weight:700; white-space:nowrap; }
+  .project-select{
+    flex:1; min-width:180px; color:var(--blueprint); font-family:var(--sans); font-size:13px; font-weight:700;
+    padding:9px 12px; border-radius:8px; cursor:pointer; outline:none;
+    background:var(--field); border:1.5px solid var(--deep-blue-border);
+  }
+  .project-select option{ background:var(--field); color:var(--ink); }
+
+  /* layout */
+  .workspace{ display:grid; grid-template-columns:320px 1fr; gap:0; align-items:start; position:relative; }
+  .divider{ position:absolute; left:320px; top:0; bottom:0; border-left:1.5px dashed var(--line); }
+  .panel-left{ padding-right:28px; position:sticky; top:calc(20px + env(safe-area-inset-top, 0px)); }
+  .panel-right{ padding-left:28px; min-width:0; }
+
+  .section-label{ display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .section-label .tag{
+    font-family:var(--mono); font-size:11px; color:var(--blueprint);
+    border:1px solid var(--blueprint-dim); background:rgba(37,99,235,0.08);
+    padding:2px 8px; border-radius:4px;
+  }
+  .section-label h2{ font-size:15px; margin:0; font-weight:600; }
+
+  .card{ background:var(--paper); border:1px solid var(--line); border-left:3px solid var(--blueprint); border-radius:14px; }
+  .req-card{ padding:18px; }
+  .dropzone{
+    border:1.5px solid var(--deep-blue-border); border-radius:10px; padding:14px;
+    display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:10px;
+    font-size:13px; font-weight:600; color:#EAF2FB;
+    background:linear-gradient(135deg, #1D4ED8, #0A2C4A);
+  }
+  .dropzone:hover, .dropzone.drag{ background:linear-gradient(135deg, #1E40AF, #0D3557); }
+  .dropzone svg{ flex-shrink:0; color:#93C5FD; }
+  .dropzone input{ display:none; }
+  .filename-chip{
+    font-family:var(--mono); font-size:11px; color:var(--amber);
+    background:rgba(180,83,9,0.12); border:1px solid var(--amber-dim);
+    padding:2px 8px; border-radius:4px; margin-left:auto; max-width:120px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .mockup-zone{
+    border:1.5px dashed var(--blueprint-dim); border-radius:10px; padding:12px 14px;
+    display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:8px;
+    font-size:12.5px; font-weight:600; color:var(--blueprint); background:rgba(37,99,235,0.04);
+  }
+  .mockup-zone:hover, .mockup-zone.drag{ background:rgba(37,99,235,0.09); border-color:var(--blueprint); }
+  .mockup-zone input{ display:none; }
+  .mockup-zone .opt{ margin-left:auto; font-size:10.5px; color:var(--ink-faint); font-weight:500; }
+  .mockup-thumbs{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .mockup-thumb{ position:relative; width:58px; height:58px; border-radius:7px; overflow:hidden; border:1px solid var(--line); }
+  .mockup-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .mockup-thumb button{
+    position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%;
+    border:none; background:rgba(30,36,48,0.75); color:#fff; font-size:11px; cursor:pointer; padding:0;
+  }
+
+  textarea#reqInput{
+    width:100%; min-height:340px; resize:vertical;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:8px;
+    color:var(--ink); font-family:var(--sans); font-size:13.5px; line-height:1.6; padding:12px; outline:none;
+  }
+  textarea#reqInput:focus{ border-color:var(--blueprint); }
+  textarea#reqInput::placeholder{ color:var(--ink-faint); }
+  .req-meta{ display:flex; align-items:center; gap:10px; margin-top:10px; font-size:11.5px; color:var(--ink-faint); font-family:var(--mono); }
+  .clear-req-btn{
+    display:flex; align-items:center; gap:5px; margin-left:auto; background:transparent; border:none; color:var(--red);
+    font-family:var(--sans); font-size:11.5px; font-weight:600; cursor:pointer; padding:4px 6px; border-radius:6px;
+  }
+  .clear-req-btn:hover{ background:rgba(185,28,28,0.1); }
+
+  .opt-label{ display:block; font-size:12px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px; }
+  .opt-select{
+    background:var(--bg-panel); border:1px solid var(--line); color:var(--ink);
+    font-family:var(--sans); font-size:12.5px; padding:8px 10px; border-radius:7px; width:100%; outline:none; cursor:pointer;
+  }
+  .depth-group{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .depth-opt{
+    background:var(--bg-panel); border:1.5px solid var(--line); border-radius:9px; padding:8px 6px;
+    cursor:pointer; text-align:center; font-family:var(--sans); color:var(--ink);
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .depth-opt .d-name{ font-size:12px; font-weight:700; }
+  .depth-opt .d-sub{ font-size:10px; color:var(--ink-faint); }
+  .depth-opt:hover{ border-color:var(--blueprint-dim); }
+  .depth-opt[aria-pressed="true"]{ border-color:var(--blueprint); background:rgba(37,99,235,0.1); }
+  .depth-opt[aria-pressed="true"] .d-name{ color:var(--blueprint); }
+  .depth-desc{ font-size:11.5px; color:var(--ink-dim); margin-top:7px; line-height:1.55; }
+
+  .btn{
+    font-family:var(--sans); font-size:13.5px; font-weight:600; border-radius:10px;
+    padding:11px 18px; border:none; cursor:pointer; display:inline-flex;
+    align-items:center; justify-content:center; gap:8px;
+  }
+  .btn:active{ transform:scale(0.98); }
+  .btn:disabled{ opacity:0.45; cursor:not-allowed; transform:none; }
+  .btn-primary{
+    background:var(--blueprint); color:#fff; width:100%; margin-top:14px; font-weight:700;
+  }
+  .btn-primary:hover:not(:disabled){ background:var(--deep-blue); }
+  .btn-blue{
+    background:linear-gradient(135deg, #1D4ED8, #0A2C4A); border:1.5px solid #2563EB; color:#EAF2FB;
+  }
+  .btn-blue:hover:not(:disabled){ background:linear-gradient(135deg, #1E40AF, #0D3557); color:#fff; }
+  .btn-ghost{ background:transparent; border:1px solid var(--line); color:var(--ink-dim); }
+  .btn-ghost:hover:not(:disabled){ border-color:var(--blueprint-dim); color:var(--ink); }
+  .btn-green{ background:var(--green); color:#fff; border:1px solid var(--green); }
+  .btn-green:hover:not(:disabled){ filter:brightness(0.92); }
+  .btn-danger{ background:transparent; color:var(--red); border:1px solid var(--red-dim); }
+  .btn-danger:hover:not(:disabled){ background:rgba(185,28,28,0.08); }
+  .btn-sm{ font-size:12px; padding:7px 12px; border-radius:7px; }
+
+  .error-box, .success-box{ margin-top:12px; padding:10px 12px; border-radius:7px; font-size:12.5px; display:none; line-height:1.5; }
+  .error-box{ background:rgba(185,28,28,0.08); border:1px solid var(--red-dim); color:var(--red); }
+  .success-box{ background:rgba(21,128,61,0.08); border:1px solid var(--green-dim); color:var(--green); }
+
+  .req-review-panel{ margin-top:12px; border:1px solid var(--line); border-radius:8px; background:var(--bg-panel); padding:14px; font-size:12.5px; }
+  .req-review-status{ display:inline-flex; font-size:11px; font-weight:700; padding:3px 9px; border-radius:4px; border:1.5px solid; margin-bottom:10px; }
+  .req-review-status.complete{ color:var(--green); border-color:var(--green); }
+  .req-review-status.needs_clarification{ color:var(--amber); border-color:var(--amber); }
+  .req-review-summary{ color:var(--ink-dim); line-height:1.6; margin-bottom:12px; }
+  .req-review-section{ margin-bottom:12px; }
+  .req-review-section h4{ margin:0 0 6px; font-size:12px; color:var(--ink-dim); font-weight:700; }
+  .req-review-list{ margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6px; }
+  .req-review-list li{ display:flex; gap:8px; line-height:1.55; padding:8px 10px; border-radius:6px; background:var(--paper); border:1px solid var(--line-soft); }
+  .req-review-list li .marker{ flex-shrink:0; font-family:var(--mono); font-size:11px; }
+  .req-review-list.gaps li .marker{ color:var(--amber); }
+  .req-review-list.questions li .marker{ color:var(--blueprint); }
+  .req-review-empty{ color:var(--ink-faint); font-style:italic; }
+
+  /* report + dashboard */
+  .report-panel, .dashboard-panel{
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:16px;
+    padding:18px 20px; margin-bottom:16px; position:relative; overflow:hidden;
+  }
+  .report-panel::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--violet); }
+  .dashboard-panel::before{ content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--blueprint); }
+  .report-panel.bottom{ margin-top:16px; margin-bottom:0; }
+  .report-head, .dash-title{ display:flex; align-items:center; gap:10px; margin:0 0 4px; font-size:14px; font-weight:700; }
+  .report-head .tag{ font-family:var(--mono); font-size:10.5px; color:var(--violet); border:1px solid var(--violet); padding:2px 8px; border-radius:5px; }
+  .dash-title .tag{ font-family:var(--mono); font-size:10.5px; color:var(--blueprint); border:1px solid var(--blueprint); padding:2px 8px; border-radius:5px; }
+  .dash-title{ margin-bottom:14px; }
+  .report-meta{ font-size:11.5px; color:var(--ink-faint); margin-bottom:14px; }
+  .report-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .report-sec{ background:var(--paper); border:1px solid var(--line-soft); border-radius:10px; padding:12px 14px; }
+  .report-sec.wide{ grid-column:1 / -1; }
+  .report-sec h4{ margin:0 0 8px; font-size:12.5px; font-weight:700; display:flex; gap:8px; }
+  .report-sec h4 .num{ font-family:var(--mono); font-size:11px; color:var(--ink-faint); }
+  .report-sec h5{ margin:10px 0 4px; font-size:11.5px; color:var(--ink-dim); font-weight:600; }
+  .report-sec ul{ margin:0; padding-left:18px; font-size:12.5px; line-height:1.6; }
+  .report-none{ font-size:12px; color:var(--ink-faint); font-style:italic; }
+  .report-limit{ margin-top:8px; font-size:11.5px; color:var(--amber); border:1px solid var(--amber-dim); border-radius:6px; padding:6px 9px; line-height:1.5; }
+
+  .dash-metrics{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+  .dash-metric{ background:linear-gradient(135deg, #1D4ED8, #0A2C4A); border-radius:10px; padding:11px 14px; }
+  .dash-metric .m-num{ font-family:var(--mono); font-size:20px; font-weight:700; color:#EAF2FB; }
+  .dash-metric .m-lbl{ font-size:11px; color:rgba(234,242,251,0.78); margin-top:4px; line-height:1.35; }
+  .dash-sections{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; background:var(--paper); border:1px solid var(--line-soft); border-radius:12px; padding:16px; }
+  .dash-section h4{ margin:0 0 10px; font-size:12px; color:var(--ink-dim); font-weight:700; }
+  .dash-bar-row{ display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+  .dash-bar-label{ font-size:11.5px; color:var(--ink-dim); width:52px; flex-shrink:0; }
+  .dash-bar-track{ flex:1; height:8px; background:var(--bg-panel); border-radius:5px; overflow:hidden; }
+  .dash-bar-fill{ height:100%; border-radius:5px; }
+  .dash-bar-count{ font-family:var(--mono); font-size:11px; width:22px; text-align:right; }
+  .dash-empty{ color:var(--ink-faint); font-style:italic; font-size:12.5px; }
+  .dash-donut-wrap{ display:flex; align-items:center; gap:12px; }
+  .dash-donut{ width:72px; height:72px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .dash-donut-hole{ width:46px; height:46px; border-radius:50%; background:var(--paper); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .dash-donut-total{ font-family:var(--mono); font-weight:700; font-size:14px; }
+  .dash-donut-sub{ font-size:9px; color:var(--ink-faint); }
+  .dash-legend{ display:flex; flex-direction:column; gap:5px; flex:1; }
+  .dash-legend-row{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink-dim); }
+  .dash-legend-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .dash-legend-label{ flex:1; }
+  .dash-legend-count{ font-family:var(--mono); color:var(--ink); font-weight:700; }
+
+  .spinner{ width:14px; height:14px; border:2px solid rgba(127,127,127,0.35); border-top-color:currentColor; border-radius:50%; animation:spin .7s linear infinite; display:inline-block; vertical-align:middle; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+  @media (prefers-reduced-motion: reduce){ .spinner{ animation-duration:2s; } }
+
+  .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+  .toolbar-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  /* selection bar */
+  .select-bar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;
+    background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:9px 14px;
+  }
+  .select-bar .sel-count{ font-size:13px; font-weight:600; color:var(--ink); }
+  .select-bar .sel-count .ready{ color:var(--green); }
+  .select-bar .sel-count .skip{ color:var(--amber); font-weight:600; }
+  .toast{
+    position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom, 0px)); z-index:300;
+    transform:translate(-50%, 16px); opacity:0; pointer-events:none;
+    max-width:min(620px, calc(100% - 32px)); padding:12px 18px; border-radius:12px;
+    font-family:var(--sans); font-size:13.5px; font-weight:600; line-height:1.5; color:#fff;
+    box-shadow:0 12px 32px rgba(15,23,42,0.28); transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
+  .toast.ok{ background:#15803D; }
+  .toast.err{ background:#B91C1C; }
+  @media (prefers-reduced-motion: reduce){ .toast{ transition:none; } }
+  .select-bar .sel-hint{ font-size:12px; color:var(--ink-faint); flex:1; min-width:180px; }
+  .select-bar.active{ border-color:var(--blueprint); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+
+  .empty-state{ border:1.5px dashed var(--line); border-radius:10px; padding:50px 24px; text-align:center; color:var(--ink-faint); }
+  .empty-state p{ margin:0; font-size:13.5px; }
+  .empty-state p.sub{ font-size:12px; margin-top:6px; }
+
+  /* table */
+  .table-scroll{ overflow-x:auto; border:1px solid var(--line); border-radius:14px; }
+  .tc-table{ width:100%; border-collapse:separate; border-spacing:0; min-width:1640px; background:var(--paper); }
+  .tc-table thead th{
+    position:sticky; top:0; background:#2B2E33; color:#E7E9ED;
+    font-size:11.5px; font-weight:600; text-align:left; padding:11px 10px;
+    border-bottom:2px solid #2563EB; white-space:nowrap; z-index:1;
+  }
+  .tc-table thead th.col-check{ width:44px; text-align:center; }
+  .tc-table tbody td{ padding:7px 10px; border-bottom:1px solid var(--line-soft); vertical-align:top; font-size:12.5px; }
+  .tc-table tbody tr:last-child td{ border-bottom:none; }
+  .tc-table tbody tr:hover{ background:rgba(37,99,235,0.05); }
+  .tc-table tbody tr.res-pass{ background:rgba(21,128,61,0.06); }
+  .tc-table tbody tr.res-fail{ background:rgba(185,28,28,0.06); }
+  .tc-table tbody tr.is-selected{ box-shadow: inset 3px 0 0 var(--blueprint); }
+  td.col-check{ text-align:center; padding-top:12px !important; }
+  .row-check, .all-check{ width:18px; height:18px; cursor:pointer; accent-color:var(--blueprint); }
+
+  /* status toggle (checkbox-style, one click) */
+  .status-toggle{ display:flex; flex-direction:column; gap:4px; min-width:136px; }
+  .st-btn{ white-space:nowrap; }
+  .st-btn{
+    display:flex; align-items:center; gap:7px; background:transparent; cursor:pointer;
+    border:1.5px solid var(--line); border-radius:7px; padding:4px 8px;
+    font-family:var(--sans); font-size:12px; font-weight:600; color:var(--ink-dim); text-align:left;
+  }
+  .st-btn .box{
+    width:15px; height:15px; border-radius:4px; border:1.5px solid currentColor; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:11px; line-height:1;
+  }
+  .st-btn:hover{ border-color:var(--ink-faint); color:var(--ink); }
+  .st-btn.on.not_run{ color:var(--ink); border-color:var(--ink-faint); background:var(--bg-panel); }
+  .st-btn.on.pass{ color:#fff; border-color:var(--green); background:var(--green); }
+  .st-btn.on.fail{ color:#fff; border-color:var(--red); background:var(--red); }
+
+  .cell-merged{ min-width:250px; }
+  .merged-top{ display:flex; align-items:center; gap:6px; margin-bottom:6px; }
+  .merged-tags{ display:flex; flex-wrap:wrap; gap:5px; margin-bottom:5px; }
+  .cell-no{ font-family:var(--mono); color:var(--ink-faint); font-size:10.5px; font-weight:700; background:var(--bg-panel); border-radius:50%; width:20px; height:20px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cell-id{ font-family:var(--mono); color:var(--blueprint); font-weight:700; font-size:12px; white-space:nowrap; }
+  .cell-input, .cell-textarea, .cell-select{
+    width:100%; background:var(--bg-panel); border:1px solid var(--line-soft); border-radius:6px;
+    color:var(--ink); font-family:var(--sans); font-size:12px; padding:5px 7px; outline:none; resize:vertical; line-height:1.4;
+  }
+  .cell-input:focus, .cell-textarea:focus, .cell-select:focus{ border-color:var(--blueprint); }
+  .merged-top .cell-title{ flex:1; min-width:0; }
+  .cell-reqref{ font-size:11px; color:var(--ink-dim); font-family:var(--mono); }
+  .pill-select{
+    width:fit-content !important; font-weight:700; padding:2px 9px; font-size:10px; border-radius:20px;
+    background:var(--paper); -webkit-appearance:none; appearance:none; cursor:pointer;
+  }
+  .cell-condition{ min-width:170px; min-height:34px; }
+  .cell-precond{ min-width:160px; min-height:34px; }
+  .cell-steps{ min-width:210px; min-height:42px; }
+  .cell-testdata{ min-width:140px; min-height:34px; }
+  .cell-expected{ min-width:190px; min-height:42px; }
+  .cell-remarks{ min-width:150px; min-height:34px; }
+  .cell-actual{ min-width:190px; min-height:42px; }
+  .filter-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+  .view-toggle{ display:inline-flex; border:1.5px solid var(--deep-blue-border); border-radius:9px; overflow:hidden; flex-shrink:0; }
+  .view-toggle button{ border:none; background:var(--paper); color:var(--blueprint); font-family:var(--sans); font-size:12.5px; font-weight:700; padding:7px 12px; cursor:pointer; }
+  .view-toggle button + button{ border-left:1.5px solid var(--deep-blue-border); }
+  .view-toggle button[aria-pressed="true"]{ background:linear-gradient(135deg, #1D4ED8, #0A2C4A); color:#EAF2FB; }
+
+  /* compact list */
+  .compact-table{ min-width:780px; }
+  .compact-table tbody tr{ cursor:pointer; }
+  .compact-table tbody td{ vertical-align:middle; padding:9px 10px; }
+  .compact-table tbody tr.is-open{ background:rgba(37,99,235,0.1) !important; box-shadow:inset 3px 0 0 var(--blueprint); }
+  .compact-table .col-id{ width:74px; }
+  .compact-table .col-module{ width:150px; }
+  .compact-table .col-prio{ width:92px; }
+  .compact-table .col-approve{ width:150px; }
+  .compact-table .col-open{ width:64px; }
+  th.sortable{ cursor:pointer; user-select:none; }
+  th.sortable::after{ content:' ↕'; opacity:0.4; }
+  th.sort-asc::after{ content:' ↑'; opacity:1; }
+  th.sort-desc::after{ content:' ↓'; opacity:1; }
+  .c-status{ display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--paper); }
+  .c-status button{ border:none; background:transparent; padding:5px 9px; font-family:var(--sans); font-size:11.5px; font-weight:600; color:var(--ink-dim); cursor:pointer; white-space:nowrap; }
+  .c-status button + button{ border-left:1px solid var(--line); }
+  .c-status button:hover{ color:var(--ink); background:var(--bg-panel); }
+  .c-status button.on.not_run{ background:var(--bg-panel); color:var(--ink); }
+  .c-status button.on.pass{ background:var(--green); color:#fff; }
+  .c-status button.on.fail{ background:var(--red); color:#fff; }
+  .c-title{ font-weight:600; color:var(--ink); line-height:1.45; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .c-sub{ font-size:11px; color:var(--ink-faint); margin-top:3px; }
+  .c-sub .warn{ color:var(--amber); font-weight:600; }
+  .c-module{ font-size:12px; color:var(--ink-dim); }
+  .prio-badge{ display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px; border:1.5px solid currentColor; white-space:nowrap; }
+  .c-approve{ font-size:11.5px; line-height:1.4; color:var(--green); }
+  .c-approve.none{ color:var(--ink-faint); }
+  .open-btn{ background:transparent; border:1px solid var(--line); color:var(--blueprint); border-radius:6px; padding:4px 10px; font-family:var(--sans); font-size:12px; font-weight:600; cursor:pointer; }
+  .open-btn:hover{ border-color:var(--blueprint); }
+
+  /* detail drawer */
+  .drawer-backdrop{ position:fixed; inset:0; background:rgba(6,10,14,0.3); z-index:89; display:none; }
+  .drawer-backdrop.open{ display:block; }
+  .drawer{
+    position:fixed; top:0; right:0; bottom:0; width:min(620px, 100%); z-index:90;
+    background:var(--paper); border-left:1px solid var(--line); visibility:hidden;
+    transform:translateX(100%); transition:transform .22s ease; display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top, 0px); padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .drawer.open{ transform:none; visibility:visible; box-shadow:-20px 0 50px rgba(15,23,42,0.18); }
+  @media (prefers-reduced-motion: reduce){ .drawer{ transition:none; } }
+  .drawer-head{ display:flex; align-items:center; gap:10px; padding:14px 20px; border-bottom:1px solid var(--line); }
+  .drawer-head .cell-id{ font-size:14px; }
+  .drawer-pos{ font-size:12px; color:var(--ink-faint); }
+  .drawer-head .modal-close{ margin-left:auto; }
+  .drawer-body{ flex:1; overflow-y:auto; padding:18px 20px 24px; }
+  .drawer-foot{ display:flex; align-items:center; gap:8px; padding:12px 20px; border-top:1px solid var(--line); background:var(--paper-raised); }
+  .drawer-foot .spacer{ flex:1; }
+  .d-status{ display:flex; gap:6px; margin-bottom:16px; }
+  .d-status .st-btn{ flex:1; justify-content:center; padding:10px 8px; font-size:13.5px; }
+  .d-field{ margin-bottom:14px; }
+  .d-field > label{ display:block; font-size:12px; font-weight:700; color:var(--ink-dim); margin-bottom:5px; }
+  .d-field .cell-textarea, .d-field .cell-input{ font-size:13px; padding:8px 10px; }
+  .d-field .cell-textarea{ min-height:64px; }
+  .d-field.expected .cell-textarea{ border-left:3px solid var(--green); }
+  .d-field.actual .cell-textarea{ border-left:3px solid var(--amber); }
+  .d-title{ font-size:15px !important; font-weight:600; }
+  .d-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .d-tags{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+  .d-approve{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--bg-panel); margin-bottom:14px; }
+  .d-approve .stamp-ok{ flex:1; }
+  .d-approve .stamp-none{ flex:1; }
+  .d-hint{ font-size:11.5px; color:var(--ink-faint); }
+  @media (max-width:600px){ .d-grid{ grid-template-columns:1fr; } .d-hint{ display:none; } }
+  .f-search{
+    flex:1; min-width:200px; background:var(--paper); border:1px solid var(--line); color:var(--ink);
+    font-family:var(--sans); font-size:13px; padding:8px 12px; border-radius:8px; outline:none;
+  }
+  .f-search:focus{ border-color:var(--blueprint); }
+  .f-sel{ width:auto; background:var(--paper); }
+  .f-sel.on{ border-color:var(--blueprint); color:var(--blueprint); font-weight:600; }
+  .filter-count{ font-size:12px; color:var(--ink-faint); white-space:nowrap; }
+  .no-match td{ text-align:center; color:var(--ink-faint); padding:28px 10px !important; font-size:13px; }
+  .retest-note{ font-size:10.5px; color:var(--amber); margin-top:5px; line-height:1.4; }
+  .retest-note.ok{ color:var(--green); }
+  .row-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+  .history-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:0; max-height:55vh; overflow-y:auto; }
+  .history-list li{ display:grid; grid-template-columns:118px 1fr; gap:10px; padding:9px 0; border-bottom:1px solid var(--line-soft); font-size:12.5px; line-height:1.5; }
+  .history-list li:last-child{ border-bottom:none; }
+  .history-list .h-time{ font-family:var(--mono); font-size:11px; color:var(--ink-faint); }
+  .history-list .h-who{ font-weight:700; }
+  .history-list .h-detail{ color:var(--ink-dim); }
+  .stack{ display:flex; flex-direction:column; gap:5px; min-width:100px; }
+  .stack .mini-lbl{ font-size:10.5px; color:var(--ink-faint); }
+
+  .approve-cell{ min-width:150px; display:flex; flex-direction:column; gap:8px; align-items:flex-start; }
+  .stamp-ok{
+    font-size:11.5px; line-height:1.45; color:var(--green); border:1.5px solid var(--green);
+    border-radius:7px; padding:5px 8px; background:rgba(21,128,61,0.07);
+  }
+  .stamp-ok strong{ display:block; font-size:12px; }
+  .stamp-none{ font-size:11.5px; color:var(--ink-faint); }
+  .del-btn{
+    display:inline-flex; align-items:center; gap:5px; background:transparent; border:1px solid var(--line);
+    color:var(--ink-dim); border-radius:6px; padding:4px 9px; font-size:11.5px; font-family:var(--sans); cursor:pointer;
+  }
+  .del-btn:hover{ color:var(--red); border-color:var(--red-dim); background:rgba(185,28,28,0.06); }
+
+  @media (max-width:1300px){ .dash-sections{ grid-template-columns:1fr 1fr; } }
+  @media (max-width:1100px){ .dash-metrics{ grid-template-columns:repeat(3,1fr); } .report-grid{ grid-template-columns:1fr; } }
+  @media (max-width:900px){
+    .app{ padding:16px 14px 40px; }
+    .workspace{ grid-template-columns:1fr; }
+    .divider{ display:none; }
+    .panel-left{ position:static; padding-right:0; margin-bottom:28px; }
+    .panel-right{ padding-left:0; }
+  }
+  @media (max-width:700px){ .dash-metrics{ grid-template-columns:repeat(2,1fr); } .dash-sections{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">QA</div>
+      <div class="brand-text">
+        <h1>QA Agent</h1>
+        <p>Requirement → Test Case → ทดสอบ → รายงาน</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="config-btn" id="cloudBtn" type="button">
+        <span class="dot" id="cloudDot"></span>
+        <span id="cloudLabel">ออฟไลน์</span>
+      </button>
+      <button class="config-btn" id="configBtn" type="button">
+        <span class="dot" id="configDot"></span>
+        <span id="configBtnLabel">Config API</span>
+      </button>
+      <button class="user-chip" id="userChip" type="button" title="เปลี่ยนชื่อผู้ทดสอบ">
+        <span class="avatar" id="userAvatar">?</span>
+        <span id="userName">ยังไม่ได้ระบุชื่อ</span>
+        <span class="change">เปลี่ยน</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Config API -->
+  <div class="modal-overlay" id="configModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>ตั้งค่า AI Provider</h3>
+        <button class="modal-close" id="configCloseBtn" aria-label="ปิด">&times;</button>
+      </div>
+      <p class="modal-sub">เลือกใช้ Claude ในตัว หรือใช้ API Key ของคุณเองกับ Claude / Gemini / ChatGPT คีย์ถูกเก็บไว้ในเบราว์เซอร์นี้เท่านั้น</p>
+      <div class="env-note" id="envNote" style="display:none;"></div>
+
+      <div class="provider-tabs" id="providerTabs">
+        <button type="button" class="provider-tab" data-provider="default"><span class="p-name">ในตัว</span><span class="p-sub">ไม่ต้องใส่ Key</span></button>
+        <button type="button" class="provider-tab" data-provider="claude"><span class="p-name">Claude</span><span class="p-sub">Anthropic</span></button>
+        <button type="button" class="provider-tab" data-provider="gemini"><span class="p-name">Gemini</span><span class="p-sub">Google</span></button>
+        <button type="button" class="provider-tab" data-provider="openai"><span class="p-name">ChatGPT</span><span class="p-sub">OpenAI</span></button>
+      </div>
+
+      <div id="defaultNote" class="field-hint" style="margin-bottom:6px;">ใช้ Claude ผ่านบัญชี claude.ai ของคุณ ใช้ได้เมื่อเปิดหน้านี้บน claude.ai</div>
+
+      <div id="customFields" style="display:none;">
+        <div class="field-group">
+          <label for="cfgApiKey" id="keyLabel">API Key</label>
+          <div class="key-input-row">
+            <input type="password" id="cfgApiKey" placeholder="วาง API Key ที่นี่" autocomplete="off">
+            <button type="button" class="toggle-visibility" id="toggleKeyBtn">แสดง</button>
+          </div>
+          <div class="field-hint" id="keyHint"></div>
+        </div>
+        <div class="field-group">
+          <label for="cfgModel">Model</label>
+          <input type="text" id="cfgModel">
+        </div>
+        <div class="conn-status" id="connStatus"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="testConnBtn" type="button" style="display:none;">ทดสอบการเชื่อมต่อ</button>
+        <button class="btn btn-primary" id="saveConfigBtn" type="button">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Name gate -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="false" aria-label="รายละเอียดเคส" aria-hidden="true">
+    <div class="drawer-head" id="drawerHead"></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal-box" style="max-width:540px;">
+      <div class="modal-head">
+        <h3>ประวัติของเคส</h3>
+        <button class="modal-close" id="historyCloseBtn" aria-label="ปิด">&times;</button>
+      </div>
+      <p class="modal-sub" id="historyContext"></p>
+      <ol class="history-list" id="historyList"></ol>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="nameModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="nameModalTitle">ใส่ชื่อก่อนเริ่มใช้งาน</h3>
+        <button class="modal-close" id="nameCloseBtn" style="display:none;" aria-label="ปิด">&times;</button>
+      </div>
+      <p class="modal-sub">ชื่อนี้ใช้บันทึกในประวัติของเคส ว่าใครเปลี่ยนสถานะหรือแก้ไขอะไร เมื่อไร</p>
+      <div class="field-group">
+        <label for="nameInput">ชื่อผู้ทดสอบ</label>
+        <input type="text" id="nameInput" placeholder="เช่น สมชาย ใจดี" maxlength="60" autocomplete="name">
+        <div class="field-hint" id="nameHint"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="nameSaveBtn" type="button">เริ่มใช้งาน</button>
+      </div>
+      <div class="account-box" id="accountBox" style="display:none;">
+        <div>ข้อมูลเก็บบน Supabase — ทุกคนที่เปิดลิงก์นี้เห็นและแก้ไขข้อมูลชุดเดียวกัน</div>
+        <div class="row">
+          <button class="btn btn-ghost btn-sm" id="migrateBtn" type="button" style="display:none;">⬆ อัปโหลดโปรเจกต์ในเครื่องขึ้น Supabase</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="project-bar">
+    <span class="p-label">โปรเจกต์</span>
+    <select id="projectSelect" class="project-select" aria-label="เลือกโปรเจกต์"></select>
+    <button class="btn btn-blue btn-sm" id="newProjectBtn">+ ใหม่</button>
+    <button class="btn btn-blue btn-sm" id="renameProjectBtn">แก้ไขชื่อ</button>
+    <button class="btn btn-blue btn-sm" id="deleteProjectBtn">ลบโปรเจกต์</button>
+    <button class="btn btn-blue btn-sm" id="saveProjectBtn">💾 บันทึกโปรเจกต์</button>
+  </div>
+
+  <div class="workspace">
+    <div class="divider"></div>
+
+    <div class="panel-left">
+      <div class="section-label"><span class="tag">01</span><h2>Requirement</h2></div>
+      <div class="card req-card">
+        <div class="dropzone" id="dropzone">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+          <span>ลากไฟล์ Word / Excel / PDF / .txt มาวาง หรือคลิกเลือกไฟล์</span>
+          <input type="file" id="fileInput" accept=".txt,.md,.pdf,.docx,.xlsx,.xls,.csv">
+          <span class="filename-chip" id="filenameChip" style="display:none;"></span>
+        </div>
+
+        <div class="mockup-zone" id="mockupZone" title="แนบภาพ Mockup / Screenshot เพื่อทำ Gap Analysis เทียบกับ Requirement">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/></svg>
+          <span>แนบ Mockup / Screenshot</span>
+          <span class="opt">ไม่บังคับ · สูงสุด 5 รูป</span>
+          <input type="file" id="mockupInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+        </div>
+        <div class="mockup-thumbs" id="mockupThumbs"></div>
+
+        <textarea id="reqInput" placeholder="วาง requirement ที่นี่ เช่น:&#10;&#10;ระบบต้องอนุญาตให้ผู้ใช้ล็อกอินด้วยอีเมลและรหัสผ่าน หากกรอกรหัสผ่านผิด 3 ครั้งติดต่อกัน ระบบต้องล็อกบัญชีชั่วคราว 15 นาที..."></textarea>
+        <div class="req-meta">
+          <span id="charCount">0 ตัวอักษร</span>
+          <span id="savedNote"></span>
+          <button type="button" class="clear-req-btn" id="clearReqBtn">ล้างข้อมูล</button>
+        </div>
+        <button class="btn btn-blue" id="reviewReqBtn" style="width:100%; margin-top:10px;">
+          <span id="reviewReqBtnLabel">ตรวจสอบความครบถ้วนของ Requirement</span>
+        </button>
+        <div class="req-review-panel" id="reqReviewPanel" style="display:none;"></div>
+
+        <span class="opt-label">ระดับความลึกของ Test Case</span>
+        <div class="depth-group" id="depthGroup" role="group" aria-label="ระดับความลึก">
+          <button type="button" class="depth-opt" data-depth="uat"><span class="d-name">User Test</span><span class="d-sub">UAT · ผู้ใช้งาน</span></button>
+          <button type="button" class="depth-opt" data-depth="qa"><span class="d-name">QA Test</span><span class="d-sub">มาตรฐาน</span></button>
+          <button type="button" class="depth-opt" data-depth="deep"><span class="d-name">QA เชิงลึก</span><span class="d-sub">ละเอียดสุด</span></button>
+        </div>
+        <div class="depth-desc" id="depthDesc"></div>
+
+        <label class="opt-label" for="tcType">เทคนิคการออกแบบ</label>
+        <select id="tcType" class="opt-select">
+          <option value="mixed">BVA + EP + State + Edge (แนะนำ)</option>
+          <option value="bva">เฉพาะ BVA</option>
+          <option value="ep">เฉพาะ EP</option>
+          <option value="state">เฉพาะ State Transition</option>
+          <option value="edge">เฉพาะ Edge Case</option>
+        </select>
+
+        <button class="btn btn-primary" id="genBtn"><span id="genBtnLabel">สร้าง Test Case ด้วย AI</span></button>
+        <div class="field-hint" style="margin-top:8px;">กดสร้างซ้ำได้ ระบบจะเพิ่มเฉพาะเคสที่ยังไม่มีในโปรเจกต์</div>
+        <div class="error-box" id="errorBox"></div>
+        <div class="success-box" id="successBox"></div>
+      </div>
+    </div>
+
+    <div class="panel-right">
+      <div class="toolbar">
+        <div class="section-label" style="margin-bottom:0;"><span class="tag">02</span><h2>Test Cases</h2></div>
+        <div class="toolbar-actions">
+          <button class="btn btn-blue btn-sm" id="reportBtn">📋 รายงานวิเคราะห์</button>
+          <button class="btn btn-blue btn-sm" id="dashboardBtn">📊 แดชบอร์ด</button>
+          <button class="btn btn-blue btn-sm" id="addManualBtn">+ เพิ่มเคสเอง</button>
+          <button class="btn btn-blue btn-sm" id="exportExcelBtn">Export Excel</button>
+          <button class="btn btn-blue btn-sm" id="clearAllBtn">ล้างทั้งหมด</button>
+        </div>
+      </div>
+
+      <div class="report-panel" id="reportPanelTop" style="display:none;"></div>
+      <div class="dashboard-panel" id="dashboardPanel" style="display:none;"></div>
+
+      <div class="filter-bar" id="filterBar" style="display:none;">
+        <div class="view-toggle" role="group" aria-label="มุมมองตาราง">
+          <button type="button" data-mode="compact">มุมมองย่อ</button>
+          <button type="button" data-mode="full">มุมมองเต็ม</button>
+        </div>
+        <input type="search" id="fSearch" class="f-search" placeholder="ค้นหา ID, ชื่อเคส, ขั้นตอน, ผลลัพธ์, Defect..." aria-label="ค้นหาเคส">
+        <select id="fStatus" class="opt-select f-sel" aria-label="กรองสถานะ">
+          <option value="">ทุกสถานะ</option><option value="not_run">ยังไม่ได้ทดสอบ</option><option value="pass">ผ่าน</option><option value="fail">ไม่ผ่าน</option>
+        </select>
+        <select id="fPriority" class="opt-select f-sel" aria-label="กรอง Priority">
+          <option value="">ทุก Priority</option><option value="high">สูง (P1)</option><option value="medium">กลาง (P2)</option><option value="low">ต่ำ (P3)</option>
+        </select>
+        <select id="fModule" class="opt-select f-sel" aria-label="กรอง Module"><option value="">ทุก Module</option></select>
+        <select id="fType" class="opt-select f-sel" aria-label="กรอง Test Type"><option value="">ทุก Test Type</option></select>
+        <select id="fSort" class="opt-select f-sel" aria-label="เรียงลำดับ">
+          <option value="id:asc">เรียง: ID</option>
+          <option value="priority:asc">เรียง: Priority สูง → ต่ำ</option>
+          <option value="status:asc">เรียง: ไม่ผ่านขึ้นก่อน</option>
+          <option value="module:asc">เรียง: Module</option>
+          <option value="title:asc">เรียง: ชื่อเคส ก → ฮ</option>
+          <option value="updated:desc">เรียง: แก้ไขล่าสุด</option>
+        </select>
+        <span class="filter-count" id="fCount"></span>
+        <button class="btn btn-ghost btn-sm" id="fClear" type="button">ล้างตัวกรอง</button>
+      </div>
+
+      <div id="tcContainer">
+        <div class="empty-state" id="emptyState">
+          <p>ยังไม่มี test case</p>
+          <p class="sub">ใส่ requirement ทางซ้าย เลือกระดับความลึก แล้วกด "สร้าง Test Case ด้วย AI"</p>
+        </div>
+        <div class="table-scroll" id="tableWrap" style="display:none;">
+          <table class="tc-table">
+            <thead>
+              <tr>
+                <th>สถานะ</th>
+                <th>Test Case</th>
+                <th>เงื่อนไขที่ถูกทดสอบ</th>
+                <th>Preconditions</th>
+                <th>ขั้นตอนการทดสอบ</th>
+                <th>Test Data</th>
+                <th>ผลลัพธ์ที่คาดหวัง</th>
+                <th>ผลลัพธ์จริง (Actual)</th>
+                <th>Priority / Severity</th>
+                <th>หมายเหตุ / Defect</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="tcList"></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" id="compactWrap" style="display:none;">
+          <table class="tc-table compact-table">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="status">สถานะ</th>
+                <th class="sortable col-id" data-sort="id">ID</th>
+                <th class="sortable" data-sort="title">ชื่อเคส</th>
+                <th class="sortable col-module" data-sort="module">Module</th>
+                <th class="sortable col-prio" data-sort="priority">Priority</th>
+                <th class="col-open"></th>
+              </tr>
+            </thead>
+            <tbody id="tcListC"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="report-panel bottom" id="reportPanelBottom" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const el = id => document.getElementById(id);
+const escapeHtml = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ---------- per-viewer storage (browser only) ----------
+const store = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k, v){ try{ localStorage.setItem(k, v); return true; }catch(e){ return false; } }
+};
+const PROJECTS_KEY = 'qa-projects-data-v2';
+const USER_KEY = 'qa-user-name';
+const DEPTH_KEY = 'qa-depth';
+
+let testCases = [];
+let counter = 0;
+let mockups = [];
+let reportVisible = false;
+let selected = new Set();
+let projectsData = { projects: [], activeProjectId: null };
+let userName = '';
+let depth = store.get(DEPTH_KEY) || 'qa';
+
+// ---------- Claude runtime (sample / downloads) ----------
+let samplePromise = null;
+function getCap(name){
+  if(!(window.claude && typeof window.claude.use === 'function')) return Promise.resolve(null);
+  return window.claude.use(name).catch(() => null);
+}
+function getSample(){ if(!samplePromise) samplePromise = getCap('sample'); return samplePromise; }
+let imageSupport = null;
+async function canSendImages(sample){
+  if(imageSupport !== null) return imageSupport;
+  try{ const lim = await sample.limits(); imageSupport = !!(lim && lim.images); }catch(e){ imageSupport = false; }
+  return imageSupport;
+}
+function b64ToBlob(b64, type){
+  const bin = atob(b64); const arr = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type });
+}
+function sampleErrorText(e){
+  const code = e && e.code;
+  if(code === 'not_granted') return 'ยังไม่ได้อนุญาตให้หน้านี้ใช้ Claude — เปิดหน้าใหม่แล้วกดอนุญาต';
+  if(code === 'rate_limited') return 'เรียกใช้ Claude ถี่เกินไป รอสักครู่แล้วลองใหม่';
+  if(code === 'prompt_too_large') return 'Requirement ยาวเกินไป ลองแบ่งเป็นส่วนย่อย';
+  if(code === 'cancelled') return 'ยกเลิกการเรียก';
+  return (e && e.message) || 'เรียก Claude ไม่สำเร็จ';
+}
+// ---------- Config API (own keys) ----------
+const CONFIG_KEY = 'qa-api-config';
+const IN_CLAUDE = !!(window.claude && typeof window.claude.use === 'function');
+const PROVIDER_META = {
+  claude: { label:'Claude', defaultModel:'claude-sonnet-4-6', keyHint:'สร้าง API Key ได้ที่ console.anthropic.com' },
+  gemini: { label:'Gemini', defaultModel:'gemini-2.5-flash', keyHint:'สร้าง API Key ได้ที่ aistudio.google.com/apikey' },
+  openai: { label:'ChatGPT', defaultModel:'gpt-4o-mini', keyHint:'สร้าง API Key ได้ที่ platform.openai.com/api-keys' }
+};
+let apiConfig = { activeProvider: IN_CLAUDE ? 'default' : 'claude', providers: { claude:{apiKey:'',model:''}, gemini:{apiKey:'',model:''}, openai:{apiKey:'',model:''} } };
+try{
+  const saved = JSON.parse(store.get(CONFIG_KEY) || 'null');
+  if(saved){ apiConfig.activeProvider = saved.activeProvider || apiConfig.activeProvider; Object.assign(apiConfig.providers, saved.providers || {}); }
+}catch(e){ /* defaults */ }
+
+const configModal = el('configModal');
+let selectedTab = apiConfig.activeProvider;
+function usingCustom(){
+  const p = apiConfig.activeProvider;
+  return p !== 'default' && !!(apiConfig.providers[p] && apiConfig.providers[p].apiKey);
+}
+function updateConfigDot(){
+  el('configDot').classList.toggle('on', usingCustom() || (apiConfig.activeProvider === 'default' && IN_CLAUDE));
+  el('configBtnLabel').textContent = usingCustom() ? 'Config API — ' + PROVIDER_META[apiConfig.activeProvider].label : 'Config API';
+}
+function loadTab(){
+  el('providerTabs').querySelectorAll('.provider-tab').forEach(b => b.classList.toggle('active', b.dataset.provider === selectedTab));
+  const isDefault = selectedTab === 'default';
+  el('defaultNote').style.display = isDefault ? 'block' : 'none';
+  el('customFields').style.display = isDefault ? 'none' : 'block';
+  el('testConnBtn').style.display = isDefault ? 'none' : 'inline-flex';
+  el('connStatus').className = 'conn-status';
+  const note = el('envNote');
+  if(IN_CLAUDE && !isDefault){
+    note.style.display = 'block';
+    note.textContent = 'หน้านี้เปิดอยู่บน claude.ai ซึ่งบล็อกการเรียก API ภายนอก — Key ของคุณจะใช้ได้เมื่อดาวน์โหลดไฟล์ .html ไปเปิดในเบราว์เซอร์บนเครื่องเท่านั้น';
+  } else if(!IN_CLAUDE && isDefault){
+    note.style.display = 'block';
+    note.textContent = 'ตอนนี้เปิดไฟล์นอก claude.ai จึงใช้ Claude ในตัวไม่ได้ — เลือก Claude / Gemini / ChatGPT แล้วใส่ API Key ของคุณ';
+  } else note.style.display = 'none';
+  if(!isDefault){
+    const meta = PROVIDER_META[selectedTab];
+    const saved = apiConfig.providers[selectedTab] || {};
+    el('keyLabel').textContent = meta.label + ' API Key';
+    el('keyHint').textContent = (saved.apiKey ? 'บันทึกไว้แล้ว — ' : '') + meta.keyHint;
+    el('cfgApiKey').value = saved.apiKey || '';
+    el('cfgModel').value = saved.model || '';
+    el('cfgModel').placeholder = meta.defaultModel;
+  }
+}
+el('configBtn').addEventListener('click', () => { selectedTab = apiConfig.activeProvider; loadTab(); configModal.classList.add('open'); });
+el('configCloseBtn').addEventListener('click', () => configModal.classList.remove('open'));
+configModal.addEventListener('click', e => { if(e.target === configModal) configModal.classList.remove('open'); });
+el('providerTabs').addEventListener('click', e => { const b = e.target.closest('.provider-tab'); if(!b) return; selectedTab = b.dataset.provider; loadTab(); });
+el('toggleKeyBtn').addEventListener('click', () => {
+  const k = el('cfgApiKey'); const pwd = k.type === 'password';
+  k.type = pwd ? 'text' : 'password'; el('toggleKeyBtn').textContent = pwd ? 'ซ่อน' : 'แสดง';
+});
+el('saveConfigBtn').addEventListener('click', () => {
+  apiConfig.activeProvider = selectedTab;
+  if(selectedTab !== 'default') apiConfig.providers[selectedTab] = { apiKey: el('cfgApiKey').value.trim(), model: el('cfgModel').value.trim() };
+  store.set(CONFIG_KEY, JSON.stringify(apiConfig));
+  updateConfigDot();
+  configModal.classList.remove('open');
+});
+
+function buildProviderRequest(provider, key, model, systemPrompt, userText, forTest, images){
+  const imgs = (!forTest && Array.isArray(images)) ? images : [];
+  if(provider === 'claude'){
+    const content = imgs.length
+      ? [...imgs.map(i => ({ type:'image', source:{ type:'base64', media_type:i.mediaType, data:i.data } })), { type:'text', text:userText }]
+      : userText;
+    return {
+      url: 'https://api.anthropic.com/v1/messages',
+      options: { method:'POST', headers:{ 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+        body: JSON.stringify(forTest ? { model, max_tokens:16, messages:[{ role:'user', content:'ping' }] } : { model, max_tokens:8192, system:systemPrompt, messages:[{ role:'user', content }] }) },
+      extractText: d => (d.content || []).filter(b => b.type === 'text').map(b => b.text).join('')
+    };
+  }
+  if(provider === 'gemini'){
+    const parts = [...imgs.map(i => ({ inline_data:{ mime_type:i.mediaType, data:i.data } })), { text:userText }];
+    return {
+      url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`,
+      options: { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(forTest ? { contents:[{ role:'user', parts:[{ text:'ping' }] }] } : { systemInstruction:{ parts:[{ text:systemPrompt }] }, contents:[{ role:'user', parts }], generationConfig:{ responseMimeType:'application/json' } }) },
+      extractText: d => (d.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('')
+    };
+  }
+  const userContent = imgs.length
+    ? [{ type:'text', text:userText }, ...imgs.map(i => ({ type:'image_url', image_url:{ url:`data:${i.mediaType};base64,${i.data}` } }))]
+    : userText;
+  return {
+    url: 'https://api.openai.com/v1/chat/completions',
+    options: { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
+      body: JSON.stringify({ model, messages: forTest ? [{ role:'user', content:'ping' }] : [{ role:'system', content:systemPrompt }, { role:'user', content:userContent }] }) },
+    extractText: d => d.choices?.[0]?.message?.content
+  };
+}
+const BLOCKED_MSG = 'เรียก API ภายนอกไม่ได้ — ถ้าเปิดบน claude.ai ให้ดาวน์โหลดไฟล์ .html ไปเปิดในเครื่อง หรือเปลี่ยนเป็น "ในตัว" ใน Config API';
+el('testConnBtn').addEventListener('click', async () => {
+  const st = el('connStatus');
+  const meta = PROVIDER_META[selectedTab];
+  const key = el('cfgApiKey').value.trim();
+  if(!key){ st.className = 'conn-status show fail'; st.textContent = 'กรุณาใส่ API Key ก่อนทดสอบ'; return; }
+  st.className = 'conn-status show testing'; st.textContent = 'กำลังทดสอบการเชื่อมต่อกับ ' + meta.label + '...';
+  try{
+    const req = buildProviderRequest(selectedTab, key, el('cfgModel').value.trim() || meta.defaultModel, '', 'ping', true);
+    const res = await fetch(req.url, req.options);
+    if(res.ok){ st.className = 'conn-status show ok'; st.textContent = 'เชื่อมต่อกับ ' + meta.label + ' สำเร็จ'; }
+    else { st.className = 'conn-status show fail'; st.textContent = 'เชื่อมต่อไม่สำเร็จ (' + res.status + ') — ตรวจสอบ Key หรือชื่อ Model'; }
+  }catch(e){ st.className = 'conn-status show fail'; st.textContent = BLOCKED_MSG; }
+});
+
+async function callCustom(systemPrompt, userContent, images){
+  const p = apiConfig.activeProvider;
+  const conf = apiConfig.providers[p];
+  const req = buildProviderRequest(p, conf.apiKey, conf.model || PROVIDER_META[p].defaultModel, systemPrompt, userContent, false, images);
+  let res;
+  try{ res = await fetch(req.url, req.options); }catch(e){ throw new Error(BLOCKED_MSG); }
+  if(!res.ok) throw new Error('API ตอบกลับสถานะ ' + res.status + ' — ตรวจสอบ Key ของ ' + PROVIDER_META[p].label + ' ใน Config API');
+  const text = req.extractText(await res.json());
+  if(!text) throw new Error('ไม่ได้รับข้อมูลจาก AI');
+  return text.trim();
+}
+
+async function callAI(systemPrompt, userContent, images){
+  if(usingCustom()) return callCustom(systemPrompt, userContent, images);
+  const sample = await getSample();
+  if(!sample) throw new Error('ใช้ Claude ในตัวไม่ได้เมื่อเปิดนอก claude.ai — ตั้ง API Key ของคุณที่ปุ่ม Config API');
+  const opts = { cache: false };
+  const imgs = Array.isArray(images) ? images : [];
+  if(imgs.length && await canSendImages(sample)){
+    opts.images = imgs.map(i => b64ToBlob(i.data, i.mediaType));
+  }
+  try{
+    const { text } = await sample(systemPrompt + '\n\n---\n\n' + userContent, opts);
+    if(!text) throw new Error('ไม่ได้รับข้อมูลจาก AI');
+    return text.trim();
+  }catch(e){
+    if(e && e.text && e.code !== 'cancelled' && e.code !== 'not_granted') return String(e.text).trim();
+    throw new Error(sampleErrorText(e));
+  }
+}
+
+// ---------- user name gate ----------
+const nameModal = el('nameModal');
+function renderUser(){
+  el('userName').textContent = userName || 'ยังไม่ได้ระบุชื่อ';
+  el('userAvatar').textContent = userName ? userName.trim().charAt(0).toUpperCase() : '?';
+}
+function openNameModal(first){
+  el('nameModalTitle').textContent = first ? 'ใส่ชื่อก่อนเริ่มใช้งาน' : 'เปลี่ยนชื่อผู้ทดสอบ';
+  el('nameSaveBtn').textContent = first ? 'เริ่มใช้งาน' : 'บันทึกชื่อ';
+  el('nameCloseBtn').style.display = first ? 'none' : 'block';
+  el('nameInput').value = userName;
+  el('nameHint').textContent = '';
+  const cloud = typeof isCloud === 'function' && isCloud();
+  el('accountBox').style.display = cloud ? 'flex' : 'none';
+  if(cloud){
+    const hasLocal = ((localBackup && localBackup.projects) || []).some(p => (p.testCases || []).length);
+    el('migrateBtn').style.display = hasLocal && store.get('qa-migrated') !== '1' ? '' : 'none';
+  }
+  nameModal.classList.add('open');
+  setTimeout(() => el('nameInput').focus(), 50);
+}
+function saveName(){
+  const v = el('nameInput').value.trim();
+  if(v.length < 2){ el('nameHint').textContent = 'กรุณาใส่ชื่ออย่างน้อย 2 ตัวอักษร'; return; }
+  userName = v;
+  store.set(USER_KEY, userName);
+  renderUser();
+  nameModal.classList.remove('open');
+}
+el('nameSaveBtn').addEventListener('click', saveName);
+el('nameInput').addEventListener('keydown', e => { if(e.key === 'Enter') saveName(); });
+el('nameCloseBtn').addEventListener('click', () => { if(userName) nameModal.classList.remove('open'); });
+el('userChip').addEventListener('click', () => openNameModal(false));
+
+// ---------- depth ----------
+const DEPTH = {
+  uat: {
+    label: 'User Test (UAT)', areas: 5, perArea: 4, noAreaMax: 12,
+    desc: 'มองจากมุมผู้ใช้งาน เน้น flow หลักที่ใช้งานจริงและข้อผิดพลาดที่ผู้ใช้เจอบ่อย เคสน้อยแต่ตรงจุด เขียนภาษาง่ายให้ฝ่ายธุรกิจทดสอบเองได้',
+    guide: 'ระดับ User Acceptance Test: มองจากมุมผู้ใช้งานจริง/ฝ่ายธุรกิจ เน้น happy path ของ flow หลัก และข้อผิดพลาดที่ผู้ใช้ทำบ่อย ไม่ต้องลงลึก boundary ทีละค่าหรือกรณีทางเทคนิค ใช้ภาษาง่าย ขั้นตอนทำตามได้โดยคนที่ไม่ใช่ QA'
+  },
+  qa: {
+    label: 'QA Test (มาตรฐาน)', areas: 8, perArea: 7, noAreaMax: 24,
+    desc: 'ครอบคลุม positive, negative, validation, boundary หลัก, workflow/สถานะ และสิทธิ์ผู้ใช้ตาม requirement',
+    guide: 'ระดับ QA มาตรฐาน: ครอบคลุม positive, negative, validation, boundary หลัก, workflow/status transition และ permission ตาม requirement'
+  },
+  deep: {
+    label: 'QA เชิงลึก (Full)', areas: 10, perArea: 12, noAreaMax: 40,
+    desc: 'ละเอียดที่สุด รวม boundary ทุกขอบ, edge case, ข้อมูลผิดรูปแบบ, การกระทำพร้อมกัน, refresh กลาง flow, session หมดอายุ และความปลอดภัยพื้นฐาน ใช้เวลาสร้างนานขึ้น',
+    guide: 'ระดับ QA เชิงลึก: ครอบคลุมทุกเงื่อนไขอย่างละเอียด รวม boundary ทุกขอบ, edge case, ข้อมูลผิดรูปแบบ, การกระทำพร้อมกัน, refresh/back กลาง flow, session หมดอายุ และความปลอดภัยพื้นฐาน (input injection, เข้าถึง URL ข้ามสิทธิ์)'
+  }
+};
+if(!DEPTH[depth]) depth = 'qa';
+function renderDepth(){
+  el('depthGroup').querySelectorAll('.depth-opt').forEach(b => b.setAttribute('aria-pressed', b.dataset.depth === depth ? 'true' : 'false'));
+  el('depthDesc').textContent = DEPTH[depth].desc;
+}
+el('depthGroup').addEventListener('click', e => {
+  const b = e.target.closest('.depth-opt'); if(!b) return;
+  depth = b.dataset.depth; store.set(DEPTH_KEY, depth); renderDepth();
+});
+
+// ---------- requirement input ----------
+const reqInput = el('reqInput');
+const tcList = el('tcList');
+const emptyState = el('emptyState');
+const errorBox = el('errorBox');
+const successBox = el('successBox');
+const genBtn = el('genBtn');
+const genBtnLabel = el('genBtnLabel');
+
+reqInput.addEventListener('input', () => { el('charCount').textContent = reqInput.value.length + ' ตัวอักษร'; });
+
+el('clearReqBtn').addEventListener('click', () => {
+  if(reqInput.value.trim() && !confirm('ล้างข้อมูล Requirement ทั้งหมดใช่หรือไม่?')) return;
+  reqInput.value = '';
+  el('charCount').textContent = '0 ตัวอักษร';
+  el('filenameChip').style.display = 'none';
+  el('fileInput').value = '';
+  el('reqReviewPanel').style.display = 'none';
+  mockups = []; renderMockups();
+  hideError(); hideSuccess();
+  saveState();
+});
+
+const dropzone = el('dropzone');
+const fileInput = el('fileInput');
+dropzone.addEventListener('click', () => fileInput.click());
+['dragover','dragenter'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e => { if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file){
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if(ext === 'pdf'){ handlePdfFile(file); return; }
+  if(ext === 'docx'){ handleDocxFile(file); return; }
+  if(['xlsx','xls','csv'].includes(ext)){ handleExcelFile(file); return; }
+  if(ext === 'doc'){ showError('ไฟล์ .doc แบบเก่ายังไม่รองรับ — เปิดใน Word แล้ว Save As เป็น .docx ก่อน'); return; }
+  if(/^image\//.test(file.type)){ addMockupFiles([file]); return; }
+  if(!/\.(txt|md)$/i.test(file.name)){
+    showError('รองรับไฟล์ Word (.docx), Excel (.xlsx, .xls, .csv), PDF, .txt และ .md');
+    return;
+  }
+  hideError(); hideSuccess();
+  const reader = new FileReader();
+  reader.onload = e => { reqInput.value = e.target.result; el('charCount').textContent = reqInput.value.length + ' ตัวอักษร'; };
+  reader.readAsText(file);
+  el('filenameChip').style.display = 'inline-block';
+  el('filenameChip').textContent = file.name;
+}
+
+function setImportedText(file, text, detail){
+  text = String(text || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  if(!text) throw new Error('ไม่พบข้อความในไฟล์นี้');
+  if(reqInput.value.trim() && !confirm('แทนที่ Requirement เดิมในกล่องด้วยเนื้อหาจาก "' + file.name + '" ใช่หรือไม่?')){
+    el('filenameChip').style.display = 'none';
+    return;
+  }
+  reqInput.value = text;
+  el('charCount').textContent = reqInput.value.length + ' ตัวอักษร';
+  el('filenameChip').style.display = 'inline-block';
+  el('filenameChip').textContent = file.name;
+  showSuccess('นำเข้า ' + file.name + ' สำเร็จ' + (detail ? ' (' + detail + ')' : ''));
+  saveState();
+}
+
+async function handleDocxFile(file){
+  hideError(); hideSuccess();
+  el('filenameChip').style.display = 'inline-block';
+  el('filenameChip').textContent = file.name + ' (กำลังอ่าน...)';
+  try{
+    if(typeof mammoth === 'undefined') throw new Error('โหลดไลบรารีอ่าน Word ไม่สำเร็จ ลองรีเฟรชหน้า');
+    const result = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+    const doc = new DOMParser().parseFromString(result.value, 'text/html');
+    const lines = [];
+    doc.body.querySelectorAll('h1,h2,h3,h4,h5,h6,p,li,table').forEach(node => {
+      if(node.closest('table') && node.tagName !== 'TABLE') return;
+      if(node.tagName === 'TABLE'){
+        node.querySelectorAll('tr').forEach(tr => {
+          const cells = [...tr.querySelectorAll('th,td')].map(c => c.textContent.trim().replace(/\s+/g, ' '));
+          if(cells.some(Boolean)) lines.push('| ' + cells.join(' | ') + ' |');
+        });
+        lines.push('');
+        return;
+      }
+      const t = node.textContent.trim();
+      if(!t) return;
+      if(/^H[1-6]$/.test(node.tagName)) lines.push('', '#'.repeat(+node.tagName[1]) + ' ' + t);
+      else if(node.tagName === 'LI') lines.push('- ' + t);
+      else lines.push(t);
+    });
+    setImportedText(file, lines.join('\n'), 'Word');
+  }catch(err){
+    el('filenameChip').style.display = 'none';
+    showError('อ่านไฟล์ Word ไม่สำเร็จ: ' + err.message);
+  }
+}
+
+async function handleExcelFile(file){
+  hideError(); hideSuccess();
+  el('filenameChip').style.display = 'inline-block';
+  el('filenameChip').textContent = file.name + ' (กำลังอ่าน...)';
+  try{
+    if(typeof XLSX === 'undefined') throw new Error('โหลดไลบรารี Excel ไม่สำเร็จ ลองรีเฟรชหน้า');
+    const wb = XLSX.read(await file.arrayBuffer(), { type:'array' });
+    const parts = [];
+    let rowCount = 0;
+    wb.SheetNames.forEach(name => {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, blankrows:false, defval:'' })
+        .map(r => r.map(c => String(c).trim().replace(/\s*\n\s*/g, ' / ')))
+        .filter(r => r.some(Boolean));
+      if(!rows.length) return;
+      rowCount += rows.length;
+      const width = Math.max(...rows.map(r => r.length));
+      let lastCol = 0;
+      rows.forEach(r => r.forEach((c, i) => { if(c) lastCol = Math.max(lastCol, i); }));
+      parts.push('## Sheet: ' + name);
+      rows.forEach(r => parts.push('| ' + Array.from({ length: Math.min(width, lastCol + 1) }, (_, i) => r[i] || '').join(' | ') + ' |'));
+      parts.push('');
+    });
+    setImportedText(file, parts.join('\n'), wb.SheetNames.length + ' ชีต, ' + rowCount + ' แถว');
+  }catch(err){
+    el('filenameChip').style.display = 'none';
+    showError('อ่านไฟล์ Excel ไม่สำเร็จ: ' + err.message);
+  }
+}
+
+async function handlePdfFile(file){
+  hideError(); hideSuccess();
+  el('filenameChip').style.display = 'inline-block';
+  el('filenameChip').textContent = file.name + ' (กำลังอ่าน...)';
+  try{
+    const lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+    if(!lib) throw new Error('โหลดไลบรารีอ่าน PDF ไม่สำเร็จ ลองรีเฟรชหน้า');
+    const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    let fullText = '';
+    for(let i = 1; i <= pdf.numPages; i++){
+      const content = await (await pdf.getPage(i)).getTextContent();
+      fullText += content.items.map(it => it.str).join(' ').trim() + '\n\n';
+    }
+    fullText = fullText.replace(/\n{3,}/g, '\n\n').trim();
+    if(!fullText) throw new Error('ไม่พบข้อความในไฟล์ (อาจเป็น PDF สแกน) ให้คัดลอกข้อความมาวางแทน');
+    reqInput.value = fullText;
+    el('charCount').textContent = reqInput.value.length + ' ตัวอักษร';
+    el('filenameChip').textContent = file.name;
+    showSuccess(`นำเข้า PDF สำเร็จ (${pdf.numPages} หน้า)`);
+  }catch(err){
+    el('filenameChip').style.display = 'none';
+    showError('อ่านไฟล์ PDF ไม่สำเร็จ: ' + err.message);
+  }
+}
+
+// ---------- mockups ----------
+const MAX_MOCKUPS = 5;
+const mockupZone = el('mockupZone');
+const mockupInput = el('mockupInput');
+mockupZone.addEventListener('click', () => mockupInput.click());
+['dragover','dragenter'].forEach(ev => mockupZone.addEventListener(ev, e => { e.preventDefault(); mockupZone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => mockupZone.addEventListener(ev, e => { e.preventDefault(); mockupZone.classList.remove('drag'); }));
+mockupZone.addEventListener('drop', e => addMockupFiles([...e.dataTransfer.files]));
+mockupInput.addEventListener('change', e => { addMockupFiles([...e.target.files]); mockupInput.value = ''; });
+
+function loadImageAsBase64(file, maxDim = 1568){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      URL.revokeObjectURL(url);
+      resolve({ name: file.name, mediaType: 'image/jpeg', data: dataUrl.split(',')[1], preview: dataUrl });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('อ่านรูปไม่สำเร็จ: ' + file.name)); };
+    img.src = url;
+  });
+}
+async function addMockupFiles(files){
+  const images = files.filter(f => /^image\//.test(f.type));
+  if(!images.length){ showError('รองรับเฉพาะไฟล์รูปภาพ (PNG, JPG, WEBP, GIF)'); return; }
+  const room = MAX_MOCKUPS - mockups.length;
+  if(room <= 0){ showError(`แนบ Mockup ได้สูงสุด ${MAX_MOCKUPS} รูป`); return; }
+  try{
+    mockups.push(...await Promise.all(images.slice(0, room).map(f => loadImageAsBase64(f))));
+    renderMockups();
+    if(images.length > room) showError(`แนบได้สูงสุด ${MAX_MOCKUPS} รูป — ข้ามไป ${images.length - room} รูป`);
+    else showSuccess(`แนบ Mockup แล้ว ${mockups.length} รูป`);
+  }catch(err){ showError(err.message); }
+}
+function renderMockups(){
+  const wrap = el('mockupThumbs');
+  wrap.innerHTML = '';
+  mockups.forEach((m, idx) => {
+    const box = document.createElement('div');
+    box.className = 'mockup-thumb'; box.title = m.name;
+    const img = document.createElement('img'); img.src = m.preview; img.alt = m.name;
+    const rm = document.createElement('button'); rm.type = 'button'; rm.textContent = '×'; rm.title = 'ลบรูปนี้';
+    rm.addEventListener('click', () => { mockups.splice(idx, 1); renderMockups(); });
+    box.append(img, rm); wrap.appendChild(box);
+  });
+}
+
+// toast: always visible wherever the user is on the page
+let toastTimer = null;
+function toast(msg, kind){
+  const t = el('toast'); if(!t) return;
+  t.textContent = msg;
+  t.className = 'toast show ' + (kind === 'err' ? 'err' : 'ok');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast ' + (kind === 'err' ? 'err' : 'ok'); }, kind === 'err' ? 7000 : 4000);
+}
+el('toast').addEventListener('click', () => el('toast').classList.remove('show'));
+function showError(msg){ hideSuccess(); errorBox.textContent = msg; errorBox.style.display = 'block'; toast(msg, 'err'); }
+function hideError(){ errorBox.style.display = 'none'; }
+function showSuccess(msg){ hideError(); successBox.textContent = msg; successBox.style.display = 'block'; toast(msg, 'ok'); }
+function hideSuccess(){ successBox.style.display = 'none'; }
+
+// ---------- projects ----------
+function genId(prefix){ return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+function getActiveProject(){ return projectsData.projects.find(p => p.id === projectsData.activeProjectId); }
+function syncActiveProjectFromGlobals(){
+  const proj = getActiveProject(); if(!proj) return;
+  proj.testCases = testCases; proj.counter = counter; proj.requirement = reqInput.value;
+}
+function loadGlobalsFromActiveProject(){
+  const proj = getActiveProject(); if(!proj) return;
+  testCases = (proj.testCases || []).map(normalizeCase);
+  counter = proj.counter || testCases.length;
+  reqInput.value = proj.requirement || '';
+  el('charCount').textContent = reqInput.value.length + ' ตัวอักษร';
+  selected = new Set();
+}
+function normalizeCase(tc){
+  if(!['not_run','pass','fail'].includes(tc.result)){
+    tc.result = tc.uatResult === 'pass' ? 'pass' : tc.uatResult === 'fail' ? 'fail' : 'not_run';
+  }
+  tc.approvedBy = tc.approvedBy || '';
+  tc.approvedAt = tc.approvedAt || '';
+  tc.remarks = tc.remarks || '';
+  tc.actualResult = tc.actualResult || '';
+  tc.history = Array.isArray(tc.history) ? tc.history : [];
+  return tc;
+}
+
+// ---------- history log ----------
+const FIELD_LABELS = { title:'ชื่อเคส', reqRef:'Req Ref', condition:'เงื่อนไข', preconditions:'Preconditions', steps:'ขั้นตอน', testData:'Test Data', expected:'ผลลัพธ์ที่คาดหวัง', actualResult:'ผลลัพธ์จริง', remarks:'หมายเหตุ / Defect' };
+function logHistory(tc, action, detail, extra){
+  tc.history = Array.isArray(tc.history) ? tc.history : [];
+  const now = new Date().toISOString();
+  const by = userName || '-';
+  const last = tc.history[tc.history.length - 1];
+  if(action === 'แก้ไข' && last && last.action === 'แก้ไข' && last.by === by && last.detail === detail
+     && (Date.parse(now) - Date.parse(last.at)) < 10 * 60 * 1000){
+    last.at = now; return;
+  }
+  tc.history.push(Object.assign({ at: now, by, action, detail: detail || '' }, extra || {}));
+  if(tc.history.length > 200) tc.history.splice(0, tc.history.length - 200);
+}
+function failCount(tc){ return (tc.dbFailCount || 0) + (tc.history || []).filter(h => h.action === 'เปลี่ยนสถานะ' && h.to === 'fail').length; }
+function histLabel(tc){ return (typeof isCloud === 'function' && isCloud()) ? '🕘 ประวัติ' : `🕘 ประวัติ (${(tc.history || []).length})`; }
+
+const historyModal = el('historyModal');
+async function openHistory(tc){
+  el('historyContext').textContent = `${tcCode(tc)} — ${tc.title}`;
+  const list = el('historyList');
+  list.innerHTML = '';
+  let items = [...(tc.history || [])].reverse();
+  if(typeof isCloud === 'function' && isCloud() && tc.dbId){
+    try{ items = await loadCloudHistory(tc); }
+    catch(e){ showError('โหลดประวัติไม่สำเร็จ: ' + friendlyDbError(e)); }
+  }
+  if(!items.length){
+    const li = document.createElement('li'); li.innerHTML = '<span class="h-time">-</span><span class="h-detail">ยังไม่มีประวัติ</span>'; list.appendChild(li);
+  }
+  items.forEach(h => {
+    const li = document.createElement('li');
+    const t = document.createElement('span'); t.className = 'h-time'; t.textContent = fmtStamp(h.at);
+    const body = document.createElement('span');
+    const who = document.createElement('span'); who.className = 'h-who'; who.textContent = h.by + ' ';
+    const act = document.createElement('span'); act.textContent = h.action + (h.detail ? ': ' : '');
+    const det = document.createElement('span'); det.className = 'h-detail'; det.textContent = h.detail || '';
+    body.append(who, act, det);
+    li.append(t, body); list.appendChild(li);
+  });
+  historyModal.classList.add('open');
+}
+el('historyCloseBtn').addEventListener('click', () => historyModal.classList.remove('open'));
+historyModal.addEventListener('click', e => { if(e.target === historyModal) historyModal.classList.remove('open'); });
+function renderProjectSelector(){
+  const sel = el('projectSelect');
+  sel.innerHTML = '';
+  projectsData.projects.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = `${p.name} (${p._loaded === false ? (p.caseCount || 0) : (p.testCases || []).length} เคส)`;
+    if(p.id === projectsData.activeProjectId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function resetPanelsOnProjectSwitch(){
+  if(typeof clearFilters === 'function') clearFilters();
+  if(typeof closeDrawer === 'function') closeDrawer();
+  hideError(); hideSuccess();
+  el('reqReviewPanel').style.display = 'none';
+  el('filenameChip').style.display = 'none';
+  mockups = []; renderMockups();
+}
+el('projectSelect').addEventListener('change', () => {
+  syncActiveProjectFromGlobals();
+  projectsData.activeProjectId = el('projectSelect').value;
+  loadGlobalsFromActiveProject(); resetPanelsOnProjectSwitch(); render(); saveState();
+});
+el('newProjectBtn').addEventListener('click', () => {
+  const name = prompt('ชื่อโปรเจกต์ใหม่:', 'โปรเจกต์ ' + (projectsData.projects.length + 1));
+  if(!name || !name.trim()) return;
+  syncActiveProjectFromGlobals();
+  const proj = { id: genId('proj'), name: name.trim(), requirement: '', testCases: [], counter: 0, analysis: null };
+  projectsData.projects.push(proj);
+  projectsData.activeProjectId = proj.id;
+  loadGlobalsFromActiveProject(); resetPanelsOnProjectSwitch(); render(); saveState();
+});
+el('renameProjectBtn').addEventListener('click', () => {
+  const proj = getActiveProject(); if(!proj) return;
+  const name = prompt('เปลี่ยนชื่อโปรเจกต์:', proj.name);
+  if(!name || !name.trim()) return;
+  proj.name = name.trim(); saveState();
+});
+el('deleteProjectBtn').addEventListener('click', () => {
+  if(projectsData.projects.length <= 1){ showError('ต้องมีอย่างน้อย 1 โปรเจกต์ ลบโปรเจกต์สุดท้ายไม่ได้'); return; }
+  const proj = getActiveProject(); if(!proj) return;
+  if(!confirm(`ลบโปรเจกต์ "${proj.name}" พร้อม ${(proj.testCases||[]).length} เคส ใช่หรือไม่? ย้อนกลับไม่ได้`)) return;
+  projectsData.projects = projectsData.projects.filter(p => p.id !== proj.id);
+  projectsData.activeProjectId = projectsData.projects[0].id;
+  loadGlobalsFromActiveProject(); resetPanelsOnProjectSwitch(); render(); saveState();
+});
+el('saveProjectBtn').addEventListener('click', () => {
+  const proj = getActiveProject();
+  const ok = saveState();
+  if(ok) showSuccess(`บันทึกโปรเจกต์ "${proj ? proj.name : ''}" แล้ว (${testCases.length} เคส)`);
+  else showError('บันทึกไม่สำเร็จ — พื้นที่เก็บข้อมูลของเบราว์เซอร์อาจเต็ม ให้ Export Excel เก็บไว้ก่อน');
+});
+
+function saveState(){
+  syncActiveProjectFromGlobals();
+  if(typeof isCloud === 'function' && isCloud()){
+    scheduleSync(); renderProjectSelector(); ensureActive();
+    return true;
+  }
+  const ok = store.set(PROJECTS_KEY, JSON.stringify(projectsData));
+  if(ok){ el('savedNote').textContent = 'บันทึกแล้ว'; setTimeout(() => { el('savedNote').textContent = ''; }, 1500); }
+  renderProjectSelector();
+  return ok;
+}
+function loadState(){
+  try{
+    const raw = store.get(PROJECTS_KEY);
+    if(raw){
+      const saved = JSON.parse(raw);
+      if(saved && Array.isArray(saved.projects) && saved.projects.length) projectsData = saved;
+    }
+  }catch(e){ /* start fresh */ }
+  if(!projectsData.projects.length){
+    const proj = { id: genId('proj'), name: 'โปรเจกต์ 1', requirement: '', testCases: [], counter: 0, analysis: null };
+    projectsData = { projects: [proj], activeProjectId: proj.id };
+  }
+  if(!getActiveProject()) projectsData.activeProjectId = projectsData.projects[0].id;
+  loadGlobalsFromActiveProject(); renderProjectSelector(); render();
+}
+
+// ---------- labels ----------
+const TEST_TYPES = ['Functional','Negative','Boundary','Validation','UI','Permission','Workflow','Integration','Regression','Usability','Data Persistence'];
+const SOURCES = ['Requirement','Mockup','Requirement + Mockup','Inferred QA Risk'];
+const SEVERITIES = ['critical','major','minor','trivial'];
+const RESULTS = [['not_run','ยังไม่ได้ทดสอบ','○'],['pass','ผ่าน','✓'],['fail','ไม่ผ่าน','✕']];
+
+const priorityExportLabel = p => ({high:'High (P1)', medium:'Medium (P2)', low:'Low (P3)'}[p] || p);
+const severityLabel = s => ({critical:'Critical', major:'Major', minor:'Minor', trivial:'Trivial'}[s] || s || '');
+const techniqueLabel = t => ({bva:'BVA', ep:'EP', state:'State', edge:'Edge'}[t] || t);
+const techniqueFullLabel = t => ({bva:'BVA (Boundary Value Analysis)', ep:'EP (Equivalence Partitioning)', state:'State Transition Testing', edge:'Edge Case'}[t] || t);
+const caseTypeLabel = c => ({positive:'Positive', negative:'Negative', edge:'Edge'}[c] || c);
+const resultLabel = r => ({not_run:'ยังไม่ได้ทดสอบ', pass:'ผ่าน', fail:'ไม่ผ่าน'}[r] || 'ยังไม่ได้ทดสอบ');
+function normSource(s){
+  const v = String(s || '').toLowerCase();
+  if(v.includes('require') && v.includes('mock')) return 'Requirement + Mockup';
+  if(v.includes('mock')) return 'Mockup';
+  if(v.includes('infer') || v.includes('risk')) return 'Inferred QA Risk';
+  return 'Requirement';
+}
+function normTestType(t){
+  const hit = TEST_TYPES.find(x => x.toLowerCase() === String(t || '').toLowerCase());
+  return hit || (t ? String(t) : 'Functional');
+}
+const tcCode = tc => 'TC_' + String(tc.num).padStart(2, '0');
+function fmtStamp(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d) ? iso : d.toLocaleString('th-TH', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+// ---------- render ----------
+const filters = { q:'', status:'', priority:'', type:'', module:'' };
+function matchesFilter(tc){
+  if(filters.status && tc.result !== filters.status) return false;
+  if(filters.priority && tc.priority !== filters.priority) return false;
+  if(filters.type && normTestType(tc.testType) !== filters.type) return false;
+  if(filters.module && moduleOf(tc) !== filters.module) return false;
+  if(filters.q){
+    const hay = [tcCode(tc), tc.title, tc.module, tc.reqRef, tc.condition, tc.preconditions,
+      Array.isArray(tc.steps) ? tc.steps.join(' ') : tc.steps, tc.testData, tc.expected, tc.actualResult, tc.remarks]
+      .join(' ').toLowerCase();
+    if(!filters.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w))) return false;
+  }
+  return true;
+}
+function moduleOf(tc){
+  const proj = getActiveProject();
+  return (tc.module || (proj && proj.analysis && proj.analysis.module) || '').trim() || '(ไม่ระบุ)';
+}
+const PRIO_RANK = { high:0, medium:1, low:2 };
+const STATUS_RANK = { fail:0, not_run:1, pass:2 };
+let sortState = { key:'id', dir:'asc' };
+function lastUpdated(tc){ const h = tc.history || []; return h.length ? h[h.length - 1].at : ''; }
+function compareCases(a, b){
+  const k = sortState.key;
+  let r = 0;
+  if(k === 'priority') r = (PRIO_RANK[a.priority] ?? 1) - (PRIO_RANK[b.priority] ?? 1);
+  else if(k === 'status') r = (STATUS_RANK[a.result] ?? 1) - (STATUS_RANK[b.result] ?? 1);
+  else if(k === 'module') r = moduleOf(a).localeCompare(moduleOf(b), 'th');
+  else if(k === 'title') r = String(a.title || '').localeCompare(String(b.title || ''), 'th');
+  else if(k === 'updated') r = lastUpdated(a).localeCompare(lastUpdated(b));
+  if(sortState.dir === 'desc') r = -r;
+  return r || (a.num - b.num);
+}
+function visibleCases(){ return testCases.filter(matchesFilter).sort(compareCases); }
+function syncSortUI(){
+  const v = sortState.key + ':' + sortState.dir;
+  const sel = el('fSort');
+  if(![...sel.options].some(o => o.value === v)){
+    let o = sel.querySelector('option[data-custom]');
+    if(!o){ o = document.createElement('option'); o.dataset.custom = '1'; sel.appendChild(o); }
+    o.value = v; o.textContent = 'เรียง: ' + ({id:'ID', title:'ชื่อเคส', module:'Module', priority:'Priority', status:'สถานะ', approve:'Approve', updated:'แก้ไขล่าสุด'}[sortState.key]) + (sortState.dir === 'asc' ? ' ↑' : ' ↓');
+  }
+  sel.value = v;
+  document.querySelectorAll('.compact-table th.sortable').forEach(th => {
+    th.classList.toggle('sort-asc', th.dataset.sort === sortState.key && sortState.dir === 'asc');
+    th.classList.toggle('sort-desc', th.dataset.sort === sortState.key && sortState.dir === 'desc');
+  });
+}
+el('fSort').addEventListener('change', e => { const [key, dir] = e.target.value.split(':'); sortState = { key, dir }; navOrder = []; render(); });
+document.querySelectorAll('.compact-table th.sortable').forEach(th => th.addEventListener('click', () => {
+  const key = th.dataset.sort;
+  sortState = { key, dir: sortState.key === key && sortState.dir === 'asc' ? 'desc' : 'asc' };
+  navOrder = [];
+  render();
+}));
+
+let viewMode = store.get('qa-view-mode') === 'full' ? 'full' : 'compact';
+function syncViewToggle(){ document.querySelectorAll('.view-toggle button').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === viewMode ? 'true' : 'false')); }
+document.querySelector('.view-toggle').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  viewMode = b.dataset.mode; store.set('qa-view-mode', viewMode);
+  if(viewMode === 'full') closeDrawer();
+  render();
+});
+function syncModuleFilterOptions(){
+  const sel = el('fModule');
+  const mods = [...new Set(testCases.map(moduleOf))].sort((a, b) => a.localeCompare(b, 'th'));
+  if(filters.module && !mods.includes(filters.module)) mods.push(filters.module);
+  sel.innerHTML = '<option value="">ทุก Module</option>' + mods.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join('');
+  sel.value = filters.module;
+  sel.style.display = mods.length > 1 || filters.module ? '' : 'none';
+}
+function filtersActive(){ return Object.values(filters).some(Boolean); }
+function syncTypeFilterOptions(){
+  const sel = el('fType');
+  const types = [...new Set(testCases.map(t => normTestType(t.testType)))].sort();
+  if(filters.type && !types.includes(filters.type)) types.push(filters.type);
+  sel.innerHTML = '<option value="">ทุก Test Type</option>' + types.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  sel.value = filters.type;
+}
+function applyFilterUI(){
+  [['fStatus','status'],['fPriority','priority'],['fType','type'],['fModule','module']].forEach(([id, k]) => el(id).classList.toggle('on', !!filters[k]));
+  el('fClear').style.display = filtersActive() ? 'inline-flex' : 'none';
+}
+function onFilterChange(){
+  navOrder = [];
+  const vis = new Set(visibleCases().map(t => t.id));
+  render();
+}
+let searchTimer = null;
+el('fSearch').addEventListener('input', e => { clearTimeout(searchTimer); searchTimer = setTimeout(() => { filters.q = e.target.value.trim(); onFilterChange(); }, 180); });
+[['fStatus','status'],['fPriority','priority'],['fType','type'],['fModule','module']].forEach(([id, k]) =>
+  el(id).addEventListener('change', e => { filters[k] = e.target.value; onFilterChange(); }));
+function clearFilters(){
+  Object.keys(filters).forEach(k => filters[k] = '');
+  el('fSearch').value = ''; ['fStatus','fPriority','fType','fModule'].forEach(id => el(id).value = '');
+}
+el('fClear').addEventListener('click', () => { clearFilters(); onFilterChange(); });
+
+function render(){
+  const hasCases = testCases.length > 0;
+  emptyState.style.display = hasCases ? 'none' : 'block';
+  el('tableWrap').style.display = hasCases && viewMode === 'full' ? 'block' : 'none';
+  el('compactWrap').style.display = hasCases && viewMode === 'compact' ? 'block' : 'none';
+  el('filterBar').style.display = hasCases ? 'flex' : 'none';
+  syncTypeFilterOptions();
+  syncModuleFilterOptions();
+  applyFilterUI();
+  syncSortUI();
+  syncViewToggle();
+  renderTableOnly();
+  renderDrawer();
+  renderDashboard();
+  renderReport();
+}
+
+function renderTableOnly(){
+  const vis = visibleCases();
+  el('fCount').textContent = filtersActive() ? `แสดง ${vis.length} จาก ${testCases.length} เคส` : `${testCases.length} เคส`;
+  const body = viewMode === 'compact' ? el('tcListC') : tcList;
+  tcList.innerHTML = ''; el('tcListC').innerHTML = '';
+  vis.forEach(tc => body.appendChild(viewMode === 'compact' ? renderCompactRow(tc) : renderRow(tc, testCases.indexOf(tc))));
+  if(testCases.length && !vis.length){
+    const tr = document.createElement('tr'); tr.className = 'no-match';
+    const td = document.createElement('td'); td.colSpan = viewMode === 'compact' ? 6 : 11;
+    td.textContent = 'ไม่พบเคสที่ตรงกับตัวกรอง — ลองเปลี่ยนคำค้นหรือกด "ล้างตัวกรอง"';
+    tr.appendChild(td); body.appendChild(tr);
+  }
+}
+
+function reportSection(num, title, items, opts = {}){
+  const list = Array.isArray(items) ? items.filter(Boolean) : [];
+  const body = list.length ? `<ul>${list.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : `<div class="report-none">ไม่พบประเด็น</div>`;
+  return `<div class="report-sec${opts.wide ? ' wide' : ''}"><h4><span class="num">${num}</span>${escapeHtml(title)}</h4>${body}${opts.extra || ''}</div>`;
+}
+function renderReport(){
+  const top = el('reportPanelTop'), bottom = el('reportPanelBottom');
+  const proj = getActiveProject();
+  const a = proj && proj.analysis;
+  if(!reportVisible){ top.style.display = 'none'; bottom.style.display = 'none'; return; }
+  top.style.display = 'block';
+  if(!a){
+    top.innerHTML = `<div class="report-head"><span class="tag">REPORT</span> รายงานวิเคราะห์</div><div class="dash-empty">ยังไม่มีรายงาน — กด "สร้าง Test Case ด้วย AI" เพื่อวิเคราะห์ requirement</div>`;
+    bottom.style.display = 'none';
+    return;
+  }
+  const limitNote = (a.clarifications && a.clarifications.length)
+    ? `<div class="report-limit">ความครอบคลุมถูกจำกัดโดย requirement ที่ยังไม่ชัดเจน ${a.clarifications.length} ประเด็น — เคสที่เกี่ยวข้องอิงตาม Assumptions</div>` : '';
+  let gapHtml = '';
+  if(a.gap){
+    const g = a.gap;
+    const sub = (t, arr) => `<h5>${escapeHtml(t)}</h5>` + ((arr && arr.length) ? `<ul>${arr.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>` : `<div class="report-none">ไม่พบ</div>`);
+    gapHtml = `<div class="report-sec wide"><h4><span class="num">2</span>Requirement vs Mockup Gap Analysis</h4>
+      ${sub('สิ่งที่เห็นใน Mockup', g.observations)}${sub('Requirement ที่ Mockup ครอบคลุมแล้ว', g.covered)}
+      ${sub('Requirement ที่ไม่มีใน Mockup', g.missingInMockup)}${sub('UI ใน Mockup ที่ไม่มีใน Requirement', g.extraInMockup)}
+      ${sub('ความขัดแย้ง / ไม่สอดคล้องกัน', g.conflicts)}${sub('คำถามถึง PO / BA / Designer', g.questions)}</div>`;
+  }
+  top.innerHTML = `
+    <div class="report-head"><span class="tag">REPORT</span> รายงานวิเคราะห์ — ${escapeHtml(a.module || (proj ? proj.name : ''))}</div>
+    <div class="report-meta">ระดับ: ${escapeHtml(a.depthLabel || '-')} · ${escapeHtml(a.generatedAt || '')}${a.mockupCount ? ' · Mockup ' + a.mockupCount + ' รูป' : ''}</div>
+    <div class="report-grid">
+      ${reportSection('1', 'Requirement Summary', a.summary, { wide: true })}
+      ${gapHtml}
+      ${reportSection(a.gap ? '3' : '2', 'Assumptions', a.assumptions)}
+      ${reportSection(a.gap ? '4' : '3', 'Clarifications Needed', a.clarifications)}
+      ${reportSection(a.gap ? '5' : '4', 'Test Coverage Strategy', a.coverageAreas, { wide: true, extra: limitNote })}
+    </div>`;
+  const n = a.gap ? 6 : 5;
+  bottom.style.display = 'block';
+  bottom.innerHTML = `
+    <div class="report-head" style="margin-bottom:12px;"><span class="tag">REPORT</span> ข้อสังเกตเพิ่มเติม</div>
+    <div class="report-grid">
+      ${reportSection(String(n), 'Missing / Unclear Requirements', a.missingUnclear)}
+      ${reportSection(String(n + 1), 'Missed Risks / Additional QA Suggestions', a.suggestions)}
+    </div>`;
+}
+el('reportBtn').addEventListener('click', () => { reportVisible = !reportVisible; renderReport(); });
+
+const TECHNIQUE_COLORS = { bva:'var(--blueprint)', ep:'var(--green)', state:'var(--amber)', edge:'var(--violet)' };
+const PRIORITY_COLORS = { high:'var(--red)', medium:'var(--amber)', low:'var(--ink-faint)' };
+const SOURCE_COLORS = { 'Requirement':'var(--blueprint)', 'Mockup':'var(--violet)', 'Requirement + Mockup':'var(--green)', 'Inferred QA Risk':'var(--amber)' };
+const SOURCE_SHORT = { 'Requirement':'REQ', 'Mockup':'MOCKUP', 'Requirement + Mockup':'REQ+MOCKUP', 'Inferred QA Risk':'QA RISK' };
+
+function renderDashboard(){
+  const panel = el('dashboardPanel');
+  if(panel.style.display === 'none') return;
+  const proj = getActiveProject();
+  const projName = proj ? proj.name : '';
+  const total = testCases.length;
+  const head = `<h3 class="dash-title"><span class="tag">DASHBOARD</span> สรุปผลการทดสอบ${projName ? ' — ' + escapeHtml(projName) : ''}</h3>`;
+  if(!total){ panel.innerHTML = head + `<div class="dash-empty">ยังไม่มี test case — สร้างเคสก่อนเพื่อดูแดชบอร์ด</div>`; return; }
+
+  const pass = testCases.filter(t => t.result === 'pass').length;
+  const fail = testCases.filter(t => t.result === 'fail').length;
+  const notRun = total - pass - fail;
+  const executed = pass + fail;
+  const passRate = executed ? Math.round(pass / executed * 100) : 0;
+
+  const tech = { bva:0, ep:0, state:0, edge:0 };
+  const prio = { high:0, medium:0, low:0 };
+  testCases.forEach(tc => { if(tech[tc.technique] !== undefined) tech[tc.technique]++; if(prio[tc.priority] !== undefined) prio[tc.priority]++; });
+  const maxT = Math.max(...Object.values(tech), 1), maxP = Math.max(...Object.values(prio), 1);
+
+  const metrics = [
+    [total, 'Test Case ทั้งหมด'],
+    [passRate + '%', `Pass Rate (${executed}/${total} ทดสอบแล้ว)`],
+    [fail, 'ไม่ผ่าน'],
+    [notRun, 'ยังไม่ได้ทดสอบ'],
+    [pass, 'ผ่าน']
+  ].map(([n, l]) => `<div class="dash-metric"><div class="m-num">${n}</div><div class="m-lbl">${l}</div></div>`).join('');
+
+  const bars = (title, entries, colors, max, labelFn) => `<div class="dash-section"><h4>${title}</h4>${entries.map(([k, c]) => `
+    <div class="dash-bar-row"><span class="dash-bar-label">${labelFn(k)}</span>
+    <div class="dash-bar-track"><div class="dash-bar-fill" style="width:${Math.round(c / max * 100)}%; background:${colors[k]};"></div></div>
+    <span class="dash-bar-count">${c}</span></div>`).join('')}</div>`;
+
+  const donut = (title, segs) => {
+    let cum = 0;
+    const stops = segs.map(s => { const p = s.count / total * 100; const st = `${s.color} ${cum}% ${cum + p}%`; cum += p; return st; }).join(', ');
+    return `<div class="dash-section"><h4>${title}</h4><div class="dash-donut-wrap">
+      <div class="dash-donut" style="background:conic-gradient(${stops});"><div class="dash-donut-hole"><span class="dash-donut-total">${total}</span><span class="dash-donut-sub">เคส</span></div></div>
+      <div class="dash-legend">${segs.map(s => `<div class="dash-legend-row"><span class="dash-legend-dot" style="background:${s.color};"></span><span class="dash-legend-label">${s.label}</span><span class="dash-legend-count">${s.count}</span></div>`).join('')}</div>
+    </div></div>`;
+  };
+
+  panel.innerHTML = head + `<div class="dash-metrics">${metrics}</div><div class="dash-sections">
+    ${bars('แบ่งตามเทคนิค', Object.entries(tech), TECHNIQUE_COLORS, maxT, techniqueLabel)}
+    ${bars('แบ่งตามความสำคัญ', Object.entries(prio), PRIORITY_COLORS, maxP, k => ({high:'สูง', medium:'กลาง', low:'ต่ำ'}[k]))}
+    ${donut('ผลการทดสอบ', [{label:'ผ่าน', count:pass, color:'var(--green)'}, {label:'ไม่ผ่าน', count:fail, color:'var(--red)'}, {label:'ยังไม่ได้ทดสอบ', count:notRun, color:'var(--line)'}])}
+    ${(() => { const mods = {}; testCases.forEach(t => { const m = moduleOf(t); mods[m] = (mods[m] || 0) + 1; });
+       const top = Object.entries(mods).sort((a, b) => b[1] - a[1]).slice(0, 5);
+       const colors = Object.fromEntries(top.map(([m]) => [m, 'var(--violet)']));
+       return bars('แบ่งตาม Module', top, colors, Math.max(...top.map(x => x[1]), 1), m => escapeHtml(m.length > 10 ? m.slice(0, 9) + '…' : m)); })()}
+  </div>`;
+}
+el('dashboardBtn').addEventListener('click', () => {
+  const panel = el('dashboardPanel');
+  const hidden = panel.style.display === 'none';
+  panel.style.display = hidden ? 'block' : 'none';
+  if(hidden) renderDashboard();
+});
+
+function makeCellInput(tag, cls, value, onCommit, placeholder){
+  const input = document.createElement(tag);
+  input.className = cls;
+  if(tag === 'input') input.type = 'text';
+  if(placeholder) input.placeholder = placeholder;
+  input.value = value || '';
+  input.addEventListener('change', () => onCommit(input.value));
+  return input;
+}
+function makePillSelect(options, value, colorFor, onChange, title){
+  const sel = document.createElement('select');
+  sel.className = 'cell-select pill-select';
+  if(title){ sel.title = title; sel.setAttribute('aria-label', title); }
+  options.forEach(([val, label]) => {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = label;
+    if(value === val) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  const applyColor = () => { const c = colorFor(sel.value) || 'var(--ink-dim)'; sel.style.color = c; sel.style.borderColor = c; };
+  applyColor();
+  sel.addEventListener('change', () => { onChange(sel.value); applyColor(); });
+  return sel;
+}
+
+function setResult(tc, result){
+  if(tc.result === result) return;
+  if(!userName){ openNameModal(true); return; }
+  logHistory(tc, 'เปลี่ยนสถานะ', resultLabel(tc.result) + ' → ' + resultLabel(result), { from: tc.result, to: result });
+  tc.result = result;
+  render(); saveState();
+}
+
+function renderRow(tc, idx){
+  const tr = document.createElement('tr');
+  tr.className = 'res-' + tc.result;
+
+  // status (one-click, checkbox-style)
+  const tdStatus = document.createElement('td');
+  const group = document.createElement('div');
+  group.className = 'status-toggle';
+  group.setAttribute('role', 'radiogroup');
+  group.setAttribute('aria-label', 'สถานะ ' + tcCode(tc));
+  RESULTS.forEach(([val, label, mark]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    const on = tc.result === val;
+    b.className = 'st-btn ' + val + (on ? ' on' : '');
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+    b.innerHTML = `<span class="box">${on ? mark : ''}</span>${label}`;
+    b.addEventListener('click', () => setResult(tc, val));
+    group.appendChild(b);
+  });
+  tdStatus.appendChild(group);
+  const fails = failCount(tc);
+  if(fails){
+    const note = document.createElement('div');
+    note.className = 'retest-note' + (tc.result === 'pass' ? ' ok' : '');
+    note.textContent = `เคย Fail ${fails} ครั้ง` + (tc.result === 'pass' ? ' · Re-test ผ่าน' : '');
+    tdStatus.appendChild(note);
+  }
+  tr.appendChild(tdStatus);
+
+  // test case
+  const tdMerged = document.createElement('td');
+  tdMerged.className = 'cell-merged';
+  const top = document.createElement('div'); top.className = 'merged-top';
+  const no = document.createElement('span'); no.className = 'cell-no'; no.textContent = idx + 1;
+  const idSpan = document.createElement('span'); idSpan.className = 'cell-id'; idSpan.textContent = tcCode(tc);
+  top.append(no, idSpan, makeCellInput('input', 'cell-input cell-title', tc.title, v => onFieldChange(tc.id, 'title', v)));
+  tdMerged.appendChild(top);
+  const tags = document.createElement('div'); tags.className = 'merged-tags';
+  tags.appendChild(makePillSelect([['bva','BVA'],['ep','EP'],['state','State'],['edge','Edge']], tc.technique, v => TECHNIQUE_COLORS[v], v => { tc.technique = v; saveState(); }, 'เทคนิคการออกแบบ'));
+  tags.appendChild(makePillSelect(SOURCES.map(s => [s, SOURCE_SHORT[s]]), normSource(tc.source), v => SOURCE_COLORS[v], v => { tc.source = v; saveState(); }, 'Source'));
+  const tt = normTestType(tc.testType);
+  tags.appendChild(makePillSelect((TEST_TYPES.includes(tt) ? TEST_TYPES : [...TEST_TYPES, tt]).map(t => [t, t]), tt, () => 'var(--ink-dim)', v => { tc.testType = v; saveState(); }, 'Test Type'));
+  tdMerged.appendChild(tags);
+  tdMerged.appendChild(makeCellInput('input', 'cell-input cell-reqref', tc.reqRef, v => onFieldChange(tc.id, 'reqRef', v), 'Req Ref'));
+  tr.appendChild(tdMerged);
+
+  const PH = { actualResult:'สิ่งที่เกิดขึ้นจริงตอนทดสอบ', remarks:'เช่น BUG-123' };
+  const addTextCell = (cls, field, value, isSteps) => {
+    const td = document.createElement('td');
+    td.appendChild(makeCellInput('textarea', 'cell-textarea ' + cls, value, v => onFieldChange(tc.id, field, v, isSteps), PH[field]));
+    tr.appendChild(td);
+  };
+  addTextCell('cell-condition', 'condition', tc.condition);
+  addTextCell('cell-precond', 'preconditions', tc.preconditions);
+  addTextCell('cell-steps', 'steps', Array.isArray(tc.steps) ? tc.steps.map((s,i) => `${i+1}. ${s}`).join('\n') : (tc.steps || ''), true);
+  addTextCell('cell-testdata', 'testData', tc.testData);
+  addTextCell('cell-expected', 'expected', tc.expected);
+  addTextCell('cell-actual', 'actualResult', tc.actualResult);
+
+  // priority / severity
+  const tdPriority = document.createElement('td');
+  const stack = document.createElement('div'); stack.className = 'stack';
+  const pl = document.createElement('span'); pl.className = 'mini-lbl'; pl.textContent = 'Priority';
+  const ps = document.createElement('select'); ps.className = 'cell-select';
+  [['high','สูง (P1)'],['medium','กลาง (P2)'],['low','ต่ำ (P3)']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if(tc.priority === v) o.selected = true; ps.appendChild(o); });
+  ps.addEventListener('change', () => { tc.priority = ps.value; saveState(); });
+  const sl = document.createElement('span'); sl.className = 'mini-lbl'; sl.textContent = 'Severity';
+  const ss = document.createElement('select'); ss.className = 'cell-select';
+  SEVERITIES.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = severityLabel(v); if((tc.severity || 'major') === v) o.selected = true; ss.appendChild(o); });
+  ss.addEventListener('change', () => { tc.severity = ss.value; saveState(); });
+  stack.append(pl, ps, sl, ss);
+  tdPriority.appendChild(stack);
+  tr.appendChild(tdPriority);
+
+  addTextCell('cell-remarks', 'remarks', tc.remarks);
+
+  // history + delete
+  const tdApprove = document.createElement('td');
+  const wrap = document.createElement('div'); wrap.className = 'approve-cell';
+  const actions = document.createElement('div'); actions.className = 'row-actions';
+  const hist = document.createElement('button');
+  hist.type = 'button'; hist.className = 'del-btn'; hist.textContent = histLabel(tc);
+  hist.addEventListener('click', () => openHistory(tc));
+  const del = document.createElement('button');
+  del.type = 'button'; del.className = 'del-btn'; del.textContent = '🗑 ลบ';
+  del.addEventListener('click', () => {
+    if(!confirm(`ลบ "${tcCode(tc)} — ${tc.title}" ใช่หรือไม่?`)) return;
+    testCases = testCases.filter(t => t.id !== tc.id);
+    render(); saveState();
+  });
+  actions.append(hist, del);
+  wrap.appendChild(actions);
+  tdApprove.appendChild(wrap);
+  tr.appendChild(tdApprove);
+
+  return tr;
+}
+
+const PRIO_COLOR = { high:'var(--red)', medium:'var(--amber)', low:'var(--ink-faint)' };
+const PRIO_TEXT = { high:'สูง P1', medium:'กลาง P2', low:'ต่ำ P3' };
+function makeStatusSeg(tc, cls){
+  const seg = document.createElement('div');
+  seg.className = cls;
+  seg.setAttribute('role', 'radiogroup');
+  seg.setAttribute('aria-label', 'สถานะ ' + tcCode(tc));
+  RESULTS.forEach(([val, label, mark]) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    const on = tc.result === val;
+    b.className = (cls === 'c-status' ? '' : 'st-btn ') + val + (on ? ' on' : '');
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', on ? 'true' : 'false');
+    if(cls === 'c-status') b.textContent = val === 'not_run' ? 'ยังไม่ทดสอบ' : label;
+    else b.innerHTML = `<span class="box">${on ? mark : ''}</span>${label}`;
+    b.addEventListener('click', ev => { ev.stopPropagation(); setResult(tc, val); });
+    seg.appendChild(b);
+  });
+  return seg;
+}
+
+function renderCompactRow(tc){
+  const tr = document.createElement('tr');
+  tr.className = 'res-' + tc.result + (drawerId === tc.id ? ' is-open' : '');
+  tr.addEventListener('click', e => { if(!e.target.closest('button, input, select, a')) openDrawer(tc.id); });
+
+  const tdS = document.createElement('td'); tdS.appendChild(makeStatusSeg(tc, 'c-status')); tr.appendChild(tdS);
+
+  const tdId = document.createElement('td');
+  const id = document.createElement('span'); id.className = 'cell-id'; id.textContent = tcCode(tc);
+  tdId.appendChild(id); tr.appendChild(tdId);
+
+  const tdT = document.createElement('td');
+  const t = document.createElement('div'); t.className = 'c-title'; t.textContent = tc.title || '(ไม่มีชื่อเคส)';
+  const sub = document.createElement('div'); sub.className = 'c-sub';
+  const bits = [normTestType(tc.testType), techniqueLabel(tc.technique)];
+  if(tc.reqRef) bits.push(tc.reqRef);
+  sub.textContent = bits.join(' · ');
+  const fails = failCount(tc);
+  if(fails){ const w = document.createElement('span'); w.className = 'warn'; w.textContent = `  · เคย Fail ${fails} ครั้ง`; sub.appendChild(w); }
+  if(tc.remarks){ const d = document.createElement('span'); d.className = 'warn'; d.textContent = '  · ' + tc.remarks.split('\n')[0].slice(0, 40); sub.appendChild(d); }
+  tdT.append(t, sub); tr.appendChild(tdT);
+
+  const tdM = document.createElement('td'); tdM.className = 'c-module'; tdM.textContent = moduleOf(tc); tr.appendChild(tdM);
+
+  const tdP = document.createElement('td');
+  const pb = document.createElement('span'); pb.className = 'prio-badge'; pb.style.color = PRIO_COLOR[tc.priority] || 'var(--ink-dim)';
+  pb.textContent = PRIO_TEXT[tc.priority] || tc.priority; tdP.appendChild(pb); tr.appendChild(tdP);
+
+  const tdO = document.createElement('td');
+  const ob = document.createElement('button'); ob.type = 'button'; ob.className = 'open-btn'; ob.textContent = 'ดู ›';
+  ob.setAttribute('aria-label', 'ดูรายละเอียด ' + tcCode(tc));
+  ob.addEventListener('click', () => openDrawer(tc.id));
+  tdO.appendChild(ob); tr.appendChild(tdO);
+  return tr;
+}
+
+// ---------- detail drawer ----------
+let drawerId = null;
+let navOrder = []; // order frozen when a case is opened, so marking pass/fail doesn't reshuffle "next"
+const drawer = el('drawer'), drawerBackdrop = el('drawerBackdrop');
+function drawerOrder(){
+  const ids = new Set(testCases.map(t => t.id));
+  const order = navOrder.filter(id => ids.has(id)).map(id => testCases.find(t => t.id === id));
+  return order.length ? order : visibleCases();
+}
+function openDrawer(id, keepOrder){
+  if(!keepOrder || !navOrder.length) navOrder = visibleCases().map(t => t.id);
+  const changed = drawerId !== id;
+  drawerId = id;
+  if(changed) el('drawerBody').scrollTop = 0;
+  drawer.classList.add('open'); drawer.setAttribute('aria-hidden', 'false');
+  drawerBackdrop.classList.add('open');
+  renderDrawer();
+  if(viewMode === 'compact') renderTableOnly();
+  const row = el('tcListC').querySelector('tr.is-open');
+  if(row) row.scrollIntoView({ block:'nearest' });
+}
+function closeDrawer(){
+  if(!drawerId) return;
+  drawerId = null;
+  drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true');
+  drawerBackdrop.classList.remove('open');
+  if(viewMode === 'compact') renderTableOnly();
+}
+drawerBackdrop.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', e => {
+  if(!drawerId) return;
+  if(e.key === 'Escape' && !document.querySelector('.modal-overlay.open')) closeDrawer();
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '');
+  if(!typing && (e.key === 'ArrowDown' || e.key === 'j')){ e.preventDefault(); stepDrawer(1); }
+  if(!typing && (e.key === 'ArrowUp' || e.key === 'k')){ e.preventDefault(); stepDrawer(-1); }
+});
+function stepDrawer(delta){
+  const vis = drawerOrder();
+  const i = vis.findIndex(t => t.id === drawerId);
+  const next = vis[i + delta];
+  if(next) openDrawer(next.id, true);
+}
+
+function renderDrawer(){
+  if(!drawerId) return;
+  const tc = testCases.find(t => t.id === drawerId);
+  if(!tc){ closeDrawer(); return; }
+  const vis = drawerOrder();
+  const pos = vis.findIndex(t => t.id === tc.id);
+
+  const head = el('drawerHead'); head.innerHTML = '';
+  const code = document.createElement('span'); code.className = 'cell-id'; code.textContent = tcCode(tc);
+  const p = document.createElement('span'); p.className = 'drawer-pos';
+  p.textContent = pos >= 0 ? `เคสที่ ${pos + 1} จาก ${vis.length}${filtersActive() ? ' (ตามตัวกรอง)' : ''}` : '';
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'modal-close'; x.innerHTML = '&times;'; x.setAttribute('aria-label', 'ปิด');
+  x.addEventListener('click', closeDrawer);
+  head.append(code, p, x);
+
+  const body = el('drawerBody'); body.innerHTML = '';
+  const field = (label, node, cls) => {
+    const w = document.createElement('div'); w.className = 'd-field' + (cls ? ' ' + cls : '');
+    const l = document.createElement('label'); l.textContent = label;
+    w.append(l, node); return w;
+  };
+  const ta = (fieldName, value, ph) => makeCellInput('textarea', 'cell-textarea', value, v => onFieldChange(tc.id, fieldName, v, fieldName === 'steps'), ph);
+  const inp = (fieldName, value, ph) => makeCellInput('input', 'cell-input', value, v => onFieldChange(tc.id, fieldName, v), ph);
+
+  body.appendChild(makeStatusSeg(tc, 'd-status'));
+
+  const titleIn = ta('title', tc.title); titleIn.classList.add('d-title'); titleIn.style.minHeight = '48px'; titleIn.rows = 2;
+  body.appendChild(field('ชื่อเคส', titleIn));
+
+  const tags = document.createElement('div'); tags.className = 'd-tags';
+  tags.appendChild(makePillSelect([['bva','BVA'],['ep','EP'],['state','State'],['edge','Edge']], tc.technique, v => TECHNIQUE_COLORS[v], v => { tc.technique = v; saveState(); }, 'เทคนิคการออกแบบ'));
+  tags.appendChild(makePillSelect(SOURCES.map(s => [s, SOURCE_SHORT[s]]), normSource(tc.source), v => SOURCE_COLORS[v], v => { tc.source = v; saveState(); }, 'Source'));
+  const tt = normTestType(tc.testType);
+  tags.appendChild(makePillSelect((TEST_TYPES.includes(tt) ? TEST_TYPES : [...TEST_TYPES, tt]).map(t => [t, t]), tt, () => 'var(--ink-dim)', v => { tc.testType = v; saveState(); renderTableOnly(); }, 'Test Type'));
+  body.appendChild(tags);
+
+  const g1 = document.createElement('div'); g1.className = 'd-grid';
+  g1.append(field('Module', inp('module', tc.module, moduleOf(tc))), field('Req Ref', inp('reqRef', tc.reqRef)));
+  body.appendChild(g1);
+
+  const g2 = document.createElement('div'); g2.className = 'd-grid';
+  const ps = document.createElement('select'); ps.className = 'cell-select';
+  [['high','สูง (P1)'],['medium','กลาง (P2)'],['low','ต่ำ (P3)']].forEach(([v, l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if(tc.priority === v) o.selected = true; ps.appendChild(o); });
+  ps.addEventListener('change', () => { tc.priority = ps.value; saveState(); renderTableOnly(); });
+  const ss = document.createElement('select'); ss.className = 'cell-select';
+  SEVERITIES.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = severityLabel(v); if((tc.severity || 'major') === v) o.selected = true; ss.appendChild(o); });
+  ss.addEventListener('change', () => { tc.severity = ss.value; saveState(); });
+  g2.append(field('Priority', ps), field('Severity', ss));
+  body.appendChild(g2);
+
+  body.appendChild(field('เงื่อนไขที่ถูกทดสอบ', ta('condition', tc.condition)));
+  body.appendChild(field('Preconditions', ta('preconditions', tc.preconditions)));
+  const steps = ta('steps', Array.isArray(tc.steps) ? tc.steps.map((s, i) => `${i + 1}. ${s}`).join('\n') : (tc.steps || ''));
+  steps.style.minHeight = '110px';
+  body.appendChild(field('ขั้นตอนการทดสอบ', steps));
+  body.appendChild(field('Test Data', ta('testData', tc.testData)));
+  body.appendChild(field('ผลลัพธ์ที่คาดหวัง', ta('expected', tc.expected), 'expected'));
+  body.appendChild(field('ผลลัพธ์จริง (Actual)', ta('actualResult', tc.actualResult, 'สิ่งที่เกิดขึ้นจริงตอนทดสอบ'), 'actual'));
+  body.appendChild(field('หมายเหตุ / Defect', ta('remarks', tc.remarks, 'เช่น BUG-123')));
+
+  const foot = el('drawerFoot'); foot.innerHTML = '';
+  const prev = document.createElement('button'); prev.type = 'button'; prev.className = 'btn btn-ghost btn-sm'; prev.textContent = '‹ ก่อนหน้า';
+  prev.disabled = pos <= 0; prev.addEventListener('click', () => stepDrawer(-1));
+  const hist = document.createElement('button'); hist.type = 'button'; hist.className = 'del-btn'; hist.textContent = histLabel(tc);
+  hist.addEventListener('click', () => openHistory(tc));
+  const del = document.createElement('button'); del.type = 'button'; del.className = 'del-btn'; del.textContent = '🗑 ลบ';
+  del.addEventListener('click', () => {
+    if(!confirm(`ลบ "${tcCode(tc)} — ${tc.title}" ใช่หรือไม่?`)) return;
+    const nextCase = vis[pos + 1] || vis[pos - 1];
+    testCases = testCases.filter(t => t.id !== tc.id);
+    drawerId = nextCase ? nextCase.id : null;
+    navOrder = navOrder.filter(id => id !== tc.id);
+    if(!drawerId){ drawer.classList.remove('open'); drawerBackdrop.classList.remove('open'); }
+    render(); saveState();
+  });
+  const spacer = document.createElement('span'); spacer.className = 'spacer';
+  const hint = document.createElement('span'); hint.className = 'd-hint'; hint.textContent = '↑ ↓ เปลี่ยนเคส';
+  const next = document.createElement('button'); next.type = 'button'; next.className = 'btn btn-blue btn-sm'; next.textContent = 'ถัดไป ›';
+  next.disabled = pos < 0 || pos >= vis.length - 1; next.addEventListener('click', () => stepDrawer(1));
+  foot.append(prev, hist, del, spacer, hint, next);
+}
+
+function onFieldChange(id, field, value, isSteps){
+  const tc = testCases.find(t => t.id === id); if(!tc) return;
+  tc[field] = isSteps ? value.split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean) : value;
+  logHistory(tc, 'แก้ไข', FIELD_LABELS[field] || field);
+  saveState();
+  if(viewMode === 'compact') renderTableOnly();
+}
+
+function newCaseObject(item){
+  counter++;
+  const origin = item._origin || 'สร้างโดย AI';
+  const tc = {
+    id: 'tc_' + Date.now() + '_' + counter + '_' + Math.random().toString(36).slice(2,5),
+    num: counter,
+    title: item.title || 'ไม่มีชื่อเคส',
+    module: item.module || '',
+    reqRef: item.reqRef || '',
+    source: normSource(item.source),
+    technique: ['bva','ep','state','edge'].includes(item.technique) ? item.technique : 'ep',
+    caseType: ['positive','negative','edge'].includes(item.caseType) ? item.caseType : 'positive',
+    testType: normTestType(item.testType),
+    condition: item.condition || '',
+    preconditions: item.preconditions || '',
+    steps: Array.isArray(item.steps) ? item.steps.map(s => String(s).replace(/^\d+\.\s*/, '')) : [],
+    testData: item.testData || '',
+    expected: item.expected || '',
+    priority: ['high','medium','low'].includes(item.priority) ? item.priority : 'medium',
+    severity: SEVERITIES.includes(String(item.severity || '').toLowerCase()) ? String(item.severity).toLowerCase() : 'major',
+    notes: item.notes || '',
+    depth: item.depth || depth,
+    origin: /เพิ่มเอง/.test(origin) ? 'manual' : /นำเข้า/.test(origin) ? 'import' : 'ai',
+    result: 'not_run',
+    approvedBy: '',
+    approvedAt: '',
+    remarks: '',
+    actualResult: '',
+    history: []
+  };
+  logHistory(tc, 'สร้างเคส', origin);
+  return tc;
+}
+
+el('addManualBtn').addEventListener('click', () => {
+  testCases.push(newCaseObject({ title: 'เคสทดสอบใหม่', source: 'Inferred QA Risk', testType: 'Functional', technique: 'ep', _origin: 'เพิ่มเอง' }));
+  render(); saveState();
+});
+el('clearAllBtn').addEventListener('click', () => {
+  if(testCases.length && !confirm('ลบ test case ทั้งหมด (รวมรายงานวิเคราะห์) ใช่หรือไม่?')) return;
+  testCases = []; counter = 0; selected = new Set();
+  const proj = getActiveProject(); if(proj) proj.analysis = null;
+  render(); saveState();
+});
+
+// ---------- Excel export ----------
+function buildExportRows(){
+  const header = [
+    'Test Case ID','สถานะ','Module / Feature','Test Scenario','Preconditions','Test Steps','Test Data','Expected Result',
+    'Actual Result','Priority','Severity','Test Type','หมายเหตุ / Defect','Source','Req Ref','เงื่อนไขที่ถูกทดสอบ','เทคนิค','Case Type','Notes (AI)','ประวัติ'
+  ];
+  const proj = getActiveProject();
+  const defaultModule = (proj && proj.analysis && proj.analysis.module) || '';
+  const rows = testCases.map(tc => [
+    tcCode(tc), resultLabel(tc.result),
+    tc.module || defaultModule, tc.title, tc.preconditions || '',
+    Array.isArray(tc.steps) ? tc.steps.map((s,i) => `${i+1}. ${s}`).join('\n') : (tc.steps || ''),
+    tc.testData || '', tc.expected || '', tc.actualResult || '',
+    priorityExportLabel(tc.priority), severityLabel(tc.severity || 'major'), normTestType(tc.testType),
+    tc.remarks || '', normSource(tc.source), tc.reqRef || '', tc.condition || '',
+    techniqueFullLabel(tc.technique), caseTypeLabel(tc.caseType || 'positive'), tc.notes || '',
+    (tc._exportHistory || tc.history || []).map(h => `${fmtStamp(h.at)} ${h.by}: ${h.action}${h.detail ? ' — ' + h.detail : ''}`).join('\n')
+  ]);
+  return { header, rows };
+}
+function getExportFilename(){
+  const proj = getActiveProject();
+  const slug = ((proj && proj.name) || 'project').trim().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '') || 'project';
+  return `testcases-${slug}.xlsx`;
+}
+
+el('exportExcelBtn').addEventListener('click', async () => {
+  if(!testCases.length){ showError('ยังไม่มี test case ให้ export'); return; }
+  if(typeof XLSX === 'undefined'){ showError('โหลดไลบรารี Excel ไม่สำเร็จ ลองรีเฟรชหน้า'); return; }
+  const proj = getActiveProject();
+  const projName = proj ? proj.name : 'ไม่ระบุโปรเจกต์';
+  const headerStyle = { fill:{ patternType:'solid', fgColor:{ rgb:'2563EB' } }, font:{ color:{ rgb:'FFFFFF' }, bold:true }, alignment:{ vertical:'center', horizontal:'left', wrapText:true } };
+  const wrapStyle = { alignment:{ vertical:'top', wrapText:true } };
+  const resultFill = { pass:'DCFCE7', fail:'FEE2E2' };
+
+  if(typeof isCloud === 'function' && isCloud() && proj && proj.dbId){
+    try{ const hmap = await loadCloudProjectHistory(proj); testCases.forEach(t => { t._exportHistory = hmap.get(t.dbId) || []; }); }catch(e){ /* export without history */ }
+  }
+  const { header, rows } = buildExportRows();
+  testCases.forEach(t => { delete t._exportHistory; });
+  const wsCases = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  wsCases['!cols'] = [
+    { wch:10 },{ wch:14 },{ wch:18 },{ wch:32 },{ wch:28 },{ wch:42 },{ wch:24 },{ wch:36 },
+    { wch:36 },{ wch:12 },{ wch:10 },{ wch:14 },{ wch:28 },{ wch:20 },{ wch:22 },{ wch:30 },{ wch:24 },{ wch:10 },{ wch:28 },{ wch:50 }
+  ];
+  header.forEach((_, c) => { const r = XLSX.utils.encode_cell({ r:0, c }); if(wsCases[r]) wsCases[r].s = headerStyle; });
+  rows.forEach((row, ri) => row.forEach((_, ci) => {
+    const ref = XLSX.utils.encode_cell({ r: ri + 1, c: ci });
+    if(!wsCases[ref]) return;
+    const res = testCases[ri].result;
+    wsCases[ref].s = (ci === 1 && resultFill[res])
+      ? { ...wrapStyle, fill:{ patternType:'solid', fgColor:{ rgb: resultFill[res] } }, font:{ bold:true } }
+      : wrapStyle;
+  }));
+
+  const total = testCases.length;
+  const pass = testCases.filter(t => t.result === 'pass').length;
+  const fail = testCases.filter(t => t.result === 'fail').length;
+  const notRun = total - pass - fail;
+  const pct = n => total ? Math.round(n / total * 100) + '%' : '0%';
+  const summaryRows = [
+    ['Test Summary Report'],
+    ['Project', projName],
+    ['Exported by', userName],
+    ['Exported at', new Date().toLocaleString('th-TH')],
+    [],
+    ['Total Test Cases', total],
+    ['ผ่าน', pass, pct(pass)],
+    ['ไม่ผ่าน', fail, pct(fail)],
+    ['ยังไม่ได้ทดสอบ', notRun, pct(notRun)],
+    [],
+    ['เคสที่ไม่ผ่าน'],
+    ['TC ID', 'ชื่อเคส', 'ผลลัพธ์จริง', 'หมายเหตุ / Defect']
+  ];
+  testCases.filter(t => t.result === 'fail').forEach(t => summaryRows.push([tcCode(t), t.title, t.actualResult || '', t.remarks || '']));
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+  wsSummary['!cols'] = [{ wch:18 }, { wch:36 }, { wch:18 }, { wch:40 }];
+  const t0 = wsSummary['A1']; if(t0) t0.s = { font:{ color:{ rgb:'2563EB' }, bold:true, sz:14 } };
+  [0,1,2,3].forEach(c => { const r = XLSX.utils.encode_cell({ r:12, c }); if(wsSummary[r]) wsSummary[r].s = headerStyle; });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+  const a = proj && proj.analysis;
+  if(a){
+    const aRows = [['QA Analysis Report'], ['Module / Feature', a.module || projName], ['ระดับความลึก', a.depthLabel || ''], ['Generated', a.generatedAt || ''], [], ['Section', 'Item']];
+    const push = (section, items) => {
+      const list = (items || []).filter(Boolean);
+      if(!list.length) aRows.push([section, 'ไม่พบ']);
+      else list.forEach((it, i) => aRows.push([i === 0 ? section : '', it]));
+    };
+    push('Requirement Summary', a.summary);
+    if(a.gap){
+      push('Mockup Observation', a.gap.observations); push('Gap: Covered by Mockup', a.gap.covered);
+      push('Gap: Missing from Mockup', a.gap.missingInMockup); push('Gap: Extra UI', a.gap.extraInMockup);
+      push('Gap: Conflicts', a.gap.conflicts); push('Gap: Questions', a.gap.questions);
+    }
+    push('Assumptions', a.assumptions); push('Clarifications Needed', a.clarifications);
+    push('Test Coverage Strategy', a.coverageAreas); push('Missing / Unclear Requirements', a.missingUnclear);
+    push('Additional QA Suggestions', a.suggestions);
+    const wsA = XLSX.utils.aoa_to_sheet(aRows);
+    wsA['!cols'] = [{ wch:34 }, { wch:100 }];
+    if(wsA['A1']) wsA['A1'].s = { font:{ color:{ rgb:'7C3AED' }, bold:true, sz:14 } };
+    [0,1].forEach(c => { const r = XLSX.utils.encode_cell({ r:5, c }); if(wsA[r]) wsA[r].s = headerStyle; });
+    for(let r = 6; r < aRows.length; r++){
+      const r0 = XLSX.utils.encode_cell({ r, c:0 }); if(wsA[r0]) wsA[r0].s = { font:{ bold:true }, alignment:{ vertical:'top' } };
+      const r1 = XLSX.utils.encode_cell({ r, c:1 }); if(wsA[r1]) wsA[r1].s = wrapStyle;
+    }
+    XLSX.utils.book_append_sheet(wb, wsA, 'QA Analysis');
+  }
+  XLSX.utils.book_append_sheet(wb, wsCases, 'Test Cases');
+
+  const filename = getExportFilename();
+  const downloads = await getCap('downloads');
+  if(downloads){
+    try{
+      const out = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+      const blob = new Blob([out], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      await downloads.save({ filename, data: blob });
+      showSuccess('Export Excel แล้ว: ' + filename);
+    }catch(e){
+      if(!/declin|cancel|reject/i.test(String(e && e.code))) showError('Export ไม่สำเร็จ: ' + ((e && e.message) || 'ลองใหม่อีกครั้ง'));
+    }
+  } else {
+    XLSX.writeFile(wb, filename);
+  }
+});
+
+// ---------- AI helpers ----------
+function parseJsonLoose(text, expect){
+  let t = String(text || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  const open = expect === 'array' ? '[' : '{';
+  const start = t.indexOf(open);
+  if(start > 0) t = t.slice(start);
+  try{ return JSON.parse(t); }catch(e){ /* salvage */ }
+  if(expect === 'object'){
+    const end = t.lastIndexOf('}');
+    if(end > 0){ try{ return JSON.parse(t.slice(0, end + 1)); }catch(e){} }
+  }
+  if(expect === 'array'){
+    let idx = t.lastIndexOf('}');
+    while(idx > 0){
+      try{ return JSON.parse(t.slice(0, idx + 1) + ']'); }catch(e){}
+      idx = t.lastIndexOf('}', idx - 1);
+    }
+  }
+  throw new Error('AI ตอบกลับไม่ใช่ JSON ที่สมบูรณ์');
+}
+async function runWithConcurrency(items, limit, worker){
+  const results = new Array(items.length);
+  let next = 0;
+  async function lane(){ while(next < items.length){ const i = next++; results[i] = await worker(items[i], i); } }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, lane));
+  return results;
+}
+
+// ---------- requirement review ----------
+const reviewReqBtn = el('reviewReqBtn');
+const reviewReqBtnLabel = el('reviewReqBtnLabel');
+const reqReviewPanel = el('reqReviewPanel');
+function renderReqReviewList(container, items, cls, emptyText){
+  const section = document.createElement('div'); section.className = 'req-review-section';
+  const h = document.createElement('h4'); h.textContent = cls === 'gaps' ? 'สิ่งที่ขาด / ควรเพิ่มเติม' : 'คำถามที่ควรถามกลับ';
+  section.appendChild(h);
+  if(!items || !items.length){
+    const e = document.createElement('div'); e.className = 'req-review-empty'; e.textContent = emptyText; section.appendChild(e);
+  } else {
+    const ul = document.createElement('ul'); ul.className = 'req-review-list ' + cls;
+    items.forEach(text => {
+      const li = document.createElement('li');
+      const m = document.createElement('span'); m.className = 'marker'; m.textContent = cls === 'gaps' ? '▲' : '?';
+      const s = document.createElement('span'); s.textContent = text;
+      li.append(m, s); ul.appendChild(li);
+    });
+    section.appendChild(ul);
+  }
+  container.appendChild(section);
+}
+reviewReqBtn.addEventListener('click', async () => {
+  hideError(); hideSuccess();
+  const requirement = reqInput.value.trim();
+  if(!requirement){ showError('กรุณาใส่ requirement ก่อนตรวจสอบ'); return; }
+  reviewReqBtn.disabled = true;
+  reqReviewPanel.style.display = 'none';
+  reviewReqBtnLabel.innerHTML = '<span class="spinner"></span> กำลังตรวจสอบ...';
+  const systemPrompt = `คุณเป็น Business Analyst / QA Lead ผู้เชี่ยวชาญการตรวจสอบเอกสาร Requirement
+วิเคราะห์ requirement แล้วประเมินว่ามีข้อมูลใดขาด คลุมเครือ หรือไม่ชัดเจน จนออกแบบ test case ได้ไม่ครบ
+ตรวจ: fields และ format, required/optional, min/max, ข้อความ error/success, workflow/status transition, สิทธิ์ผู้ใช้, business rule/การคำนวณ, search/filter/sort/pagination, file upload, persistence
+ตอบเป็น JSON object เท่านั้น ห้ามมีข้อความอื่น:
+{"completeness":"complete"|"needs_clarification","summary":"สรุป 1-2 ประโยค","gaps":["..."],"questions":["..."]}
+gaps และ questions ไม่เกินอย่างละ 6 ข้อ ถ้าครบดีแล้วให้ส่ง array ว่าง อย่าสร้างประเด็นถ้าไม่จำเป็นจริง`;
+  try{
+    const result = parseJsonLoose(await callAI(systemPrompt, `Requirement:\n${requirement}`), 'object');
+    if(!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
+    reqReviewPanel.innerHTML = '';
+    const complete = result.completeness === 'complete';
+    const st = document.createElement('span');
+    st.className = 'req-review-status ' + (complete ? 'complete' : 'needs_clarification');
+    st.textContent = complete ? 'ครบถ้วนดี' : 'ต้องการข้อมูลเพิ่มเติม';
+    reqReviewPanel.appendChild(st);
+    if(result.summary){ const s = document.createElement('div'); s.className = 'req-review-summary'; s.textContent = result.summary; reqReviewPanel.appendChild(s); }
+    renderReqReviewList(reqReviewPanel, Array.isArray(result.gaps) ? result.gaps : [], 'gaps', 'ไม่พบจุดที่ขาดอย่างมีนัยสำคัญ');
+    renderReqReviewList(reqReviewPanel, Array.isArray(result.questions) ? result.questions : [], 'questions', 'ไม่มีคำถามเพิ่มเติม');
+    reqReviewPanel.style.display = 'block';
+  }catch(err){
+    showError('ตรวจสอบ requirement ไม่สำเร็จ: ' + err.message);
+  }finally{
+    reviewReqBtn.disabled = false;
+    reviewReqBtnLabel.textContent = 'ตรวจสอบความครบถ้วนของ Requirement';
+  }
+});
+
+// ---------- skill prompts ----------
+const SKILL_CORE = `[Skill: qa-test-case-generation]
+คุณคือ Senior Manual QA Engineer / QA Test Architect
+หลักการ:
+- ทุกเคสต้องสืบย้อนกลับได้ไปยัง requirement, องค์ประกอบใน mockup, business rule หรือความเสี่ยง QA ที่มีเหตุผล
+- ห้ามแต่งเติม requirement ถ้าข้อมูลไม่ครบให้บันทึกเป็น Assumption / Clarification
+- ขึ้นต้น scenario และ expected result ด้วย "ตรวจสอบว่า..." ห้ามใช้คำกำกวม เช่น "ทำงานถูกต้อง"
+- ตอบภาษาไทย ยกเว้นค่า enum
+- ตอบเป็น JSON เท่านั้น ห้ามมีข้อความอื่น ห้ามใช้ markdown code fence`;
+const depthBlock = () => `\n[ระดับความลึกที่ผู้ใช้เลือก: ${DEPTH[depth].label}]\n${DEPTH[depth].guide}`;
+
+const PRIORITY_RULES = `เกณฑ์ Priority: high (P1) กระทบฟังก์ชันหลัก/ความเสี่ยงสูง, medium (P2) ฟังก์ชันรองที่ใช้บ่อย, low (P3) UI/ฟังก์ชันย่อยความเสี่ยงต่ำ
+เกณฑ์ Severity: critical (ระบบใช้ไม่ได้/ข้อมูลเสียหาย/ความปลอดภัย), major (ฟังก์ชันสำคัญผิดพลาด), minor (มีทางเลี่ยง), trivial (ความสวยงาม/ข้อความ)`;
+
+const TECHNIQUE_FOCUS = {
+  mixed: 'ผสมผสาน BVA, EP, State Transition, Edge Case ตามความเหมาะสม',
+  bva: 'เน้น Boundary Value Analysis — ต่ำกว่าขั้นต่ำ 1, ค่าต่ำสุด, ค่าสูงสุด, สูงกว่าขั้นสูงสุด 1',
+  ep: 'เน้น Equivalence Partitioning — Valid Class / Invalid Class',
+  state: 'เน้น State Transition — การเปลี่ยนสถานะ และ transition ที่ไม่ควรเกิด',
+  edge: 'เน้น Edge Case — ค่าว่าง, อักขระพิเศษ, ข้อมูลซ้ำ, การกระทำพร้อมกัน, เน็ตหลุด, refresh กลางคัน'
+};
+
+function buildAnalysisPrompt(){
+  return `${SKILL_CORE}${depthBlock()}
+
+[งาน: Intake Analysis + Requirement Review]
+ดึงข้อมูล features/screens/fields/actions, workflows, status transitions, business rules/validations, required/optional, format/min-max, สิทธิ์และบทบาท, search/filter, persistence, ข้อความแจ้งเตือน
+ตอบ JSON object:
+{"module":"ชื่อโมดูลสั้นๆ","summary":[3-6 ข้อ],"assumptions":[≤6],"clarifications":[≤6],"coverageAreas":[≤${DEPTH[depth].areas} ขอบเขตการทดสอบที่เหมาะกับระดับความลึกนี้],"missingUnclear":[≤6],"suggestions":[≤5]}
+แต่ละข้อ 1 ประโยคสั้น ถ้าไม่มีให้ส่ง array ว่าง`;
+}
+function buildGapPrompt(){
+  return `${SKILL_CORE}
+
+[งาน: Mockup Review / Gap Analysis]
+รูปที่แนบคือ mockup/screenshot ให้ตรวจเทียบกับ requirement: UI element และ state ที่เห็น, สิ่งที่ requirement ระบุแต่ไม่มีใน mockup, UI ใน mockup ที่ requirement ไม่ได้กล่าวถึง, label/สถานะ/ปุ่มที่ไม่ตรงกัน
+ตอบ JSON object (array ละ ≤5 ข้อ ข้อละ 1 ประโยค):
+{"observations":[],"covered":[],"missingInMockup":[],"extraInMockup":[],"conflicts":[],"questions":[]}`;
+}
+function buildScenarioPrompt(techFilter, hasMockups, existingTitles, area, allAreas, maxCount){
+  const areaBlock = area
+    ? `\n[ขอบเขตรอบนี้] ออกแบบเฉพาะ coverage area: "${area}"\nห้ามสร้าง scenario ของ area อื่น:\n${allAreas.filter(a => a !== area).map(a => '- ' + a).join('\n')}\n`
+    : '';
+  const existing = existingTitles.length ? `\n[เคสที่มีแล้ว — ห้ามสร้างซ้ำ]\n${existingTitles.map(t => '- ' + t).join('\n')}\n` : '';
+  return `${SKILL_CORE}${depthBlock()}
+
+[งาน: Test Case Design + Deduplication — วางรายการ scenario]
+${hasMockups ? 'รวม scenario ด้าน UI และ Requirement vs Mockup gap จากรูปที่แนบ (source = "Mockup" หรือ "Requirement + Mockup")\n' : ''}เทคนิคที่เน้น: ${TECHNIQUE_FOCUS[techFilter]}
+ห้ามมีเคสที่ทดสอบพฤติกรรมเดียวกันด้วยถ้อยคำต่างกัน
+${existing}${areaBlock}
+เรียงตามความเสี่ยง ไม่เกิน ${maxCount} รายการ
+ตอบ JSON array ของ object key สั้น:
+{"t":"ชื่อ scenario ขึ้นต้น ตรวจสอบว่า (≤15 คำ)","r":"Req Ref สั้น","k":"bva|ep|state|edge","c":"positive|negative|edge","y":"${TEST_TYPES.join('|')}","s":"Requirement|Mockup|Requirement + Mockup|Inferred QA Risk"}`;
+}
+function buildDetailPrompt(techFilter, moduleName){
+  return `${SKILL_CORE}${depthBlock()}
+
+[งาน: เขียนรายละเอียด test case]
+เขียนรายละเอียดให้ครบสำหรับ scenario ที่ได้รับ (1 scenario = 1 เคส เรียงตามลำดับเดิม ห้ามเพิ่มหรือตัด)
+${PRIORITY_RULES}
+เทคนิคที่เน้น: ${TECHNIQUE_FOCUS[techFilter]}
+กฎ:
+- preconditions: สิ่งที่ต้องเตรียมก่อนเริ่ม ห้ามใส่เป็นขั้นแรกของ steps
+- steps: ${depth === 'uat' ? '2-5 ขั้น เขียนจากมุมผู้ใช้งาน ภาษาง่าย' : '2-6 ขั้น สั้น ทำตามได้จริง'} ไม่ต้องใส่เลขลำดับ
+- testData: ค่าจริงที่ใช้ทดสอบ
+- condition: เงื่อนไขที่ทดสอบ
+- expected: ขึ้นต้น "ตรวจสอบว่า..." ผลลัพธ์ที่สังเกตได้ชัดเจน
+- notes: assumption ที่ใช้ หรือเว้นว่าง
+ตอบ JSON array ของ object:
+{"title","module":"${moduleName || 'ตามฟีเจอร์'}","reqRef","source","technique","caseType","testType","condition","preconditions","steps":[],"testData","expected","priority":"high|medium|low","severity":"critical|major|minor|trivial","notes"}`;
+}
+function buildDedupePrompt(){
+  return `${SKILL_CORE}
+
+[งาน: Deduplication]
+หาเคสที่ทดสอบพฤติกรรมเดียวกัน (ต่างแค่ถ้อยคำ) เก็บเคสที่ชัดที่สุดไว้หนึ่งเคส ระบุเลขที่ควรลบ
+ห้ามลบเคสที่ input, role, status, validation หรือผลลัพธ์ต่างกัน ถ้าไม่แน่ใจให้เก็บไว้
+ตอบ JSON object: {"remove":[เลข]}`;
+}
+
+const cleanList = v => Array.isArray(v) ? v.map(x => String(x).trim()).filter(Boolean) : [];
+const normKey = s => String(s || '').toLowerCase().replace(/^ตรวจสอบว่า/, '').replace(/[\s\-_.,:;"'()]+/g, '');
+
+genBtn.addEventListener('click', async () => {
+  hideError(); hideSuccess();
+  if(!userName){ openNameModal(true); return; }
+  const requirement = reqInput.value.trim();
+  if(!requirement){ showError('กรุณาใส่ requirement ก่อนสร้าง test case'); return; }
+  const techFilter = el('tcType').value;
+  const D = DEPTH[depth];
+  const proj = getActiveProject();
+  const images = mockups.map(m => ({ mediaType: m.mediaType, data: m.data }));
+  const hasMockups = images.length > 0;
+  const reqText = `Requirement:\n${requirement}`;
+  const setProgress = txt => { genBtnLabel.innerHTML = '<span class="spinner"></span> ' + escapeHtml(txt); };
+
+  genBtn.disabled = true;
+  setProgress(hasMockups ? 'วิเคราะห์ Requirement + Mockup...' : 'วิเคราะห์ Requirement...');
+
+  try{
+    const existingTitles = testCases.slice(-40).map(t => t.title).filter(Boolean);
+    const [analysisRes, gapRes] = await Promise.allSettled([
+      callAI(buildAnalysisPrompt(), reqText).then(r => parseJsonLoose(r, 'object')),
+      hasMockups ? callAI(buildGapPrompt(), reqText, images).then(r => parseJsonLoose(r, 'object')) : Promise.resolve(null)
+    ]);
+    if(analysisRes.status === 'rejected' && /อนุญาต|claude\.ai/.test(String(analysisRes.reason && analysisRes.reason.message))){
+      throw analysisRes.reason;
+    }
+    const analysis = analysisRes.status === 'fulfilled' ? analysisRes.value : {};
+    const gap = gapRes.status === 'fulfilled' ? gapRes.value : null;
+
+    if(proj){
+      proj.analysis = {
+        module: String(analysis.module || proj.name || ''),
+        summary: cleanList(analysis.summary), assumptions: cleanList(analysis.assumptions),
+        clarifications: cleanList(analysis.clarifications), coverageAreas: cleanList(analysis.coverageAreas),
+        missingUnclear: cleanList(analysis.missingUnclear), suggestions: cleanList(analysis.suggestions),
+        gap: gap ? {
+          observations: cleanList(gap.observations), covered: cleanList(gap.covered),
+          missingInMockup: cleanList(gap.missingInMockup), extraInMockup: cleanList(gap.extraInMockup),
+          conflicts: cleanList(gap.conflicts), questions: cleanList(gap.questions)
+        } : null,
+        mockupCount: images.length,
+        depthLabel: D.label,
+        generatedAt: new Date().toLocaleString('th-TH')
+      };
+    }
+
+    const areas = cleanList(analysis.coverageAreas).slice(0, D.areas);
+    const gapArea = hasMockups ? ['Requirement vs Mockup gaps และ UI ที่เห็นใน mockup'] : [];
+    const areaList = areas.length ? [...areas, ...gapArea] : [null];
+    const perArea = areas.length ? D.perArea : D.noAreaMax;
+    let areasDone = 0, areaFailed = 0;
+    setProgress(`ออกแบบ scenario 0/${areaList.length} หัวข้อ...`);
+
+    const scenarioLists = await runWithConcurrency(areaList, 2, async area => {
+      try{
+        const useImgs = hasMockups && (!area || gapArea.includes(area));
+        const raw = await callAI(buildScenarioPrompt(techFilter, hasMockups, existingTitles, area, areaList.filter(Boolean), perArea), reqText, useImgs ? images : []);
+        const arr = parseJsonLoose(raw, 'array');
+        return Array.isArray(arr) ? arr : [];
+      }catch(e){ areaFailed++; return []; }
+      finally{ areasDone++; setProgress(`ออกแบบ scenario ${areasDone}/${areaList.length} หัวข้อ...`); }
+    });
+    if(areaFailed === areaList.length) throw new Error('วางรายการ scenario ไม่สำเร็จ');
+
+    const seen = new Set(testCases.map(t => normKey(t.title)));
+    let scenarios = scenarioLists.flat().filter(s => {
+      const key = normKey(s && s.t);
+      if(!key || seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+
+    if(scenarios.length > 1){
+      setProgress(`ตรวจเคสซ้ำ ${scenarios.length} scenario...`);
+      try{
+        const numbered = scenarios.map((s, i) => `${i + 1}. ${s.t}`).join('\n');
+        const res = parseJsonLoose(await callAI(buildDedupePrompt(), `Scenario:\n${numbered}`), 'object');
+        const remove = new Set((Array.isArray(res.remove) ? res.remove : []).map(n => Number(n) - 1));
+        if(remove.size < scenarios.length) scenarios = scenarios.filter((_, i) => !remove.has(i));
+      }catch(e){ /* keep local dedupe */ }
+    }
+
+    if(!scenarios.length){
+      reportVisible = true; render(); saveState();
+      showSuccess('ไม่พบ scenario ใหม่ — เคสปัจจุบันครอบคลุมแล้ว (ดูรายงานวิเคราะห์เพื่อหาจุดที่ยังขาด)');
+      return;
+    }
+
+    const moduleName = proj && proj.analysis ? proj.analysis.module : '';
+    const BATCH = 3;
+    const batches = [];
+    for(let i = 0; i < scenarios.length; i += BATCH) batches.push(scenarios.slice(i, i + BATCH));
+    let done = 0, failedBatches = 0;
+    setProgress(`เขียนรายละเอียดเคส 0/${scenarios.length}...`);
+    const detailSystem = buildDetailPrompt(techFilter, moduleName);
+
+    const results = await runWithConcurrency(batches, 2, async batch => {
+      const list = batch.map((s, i) => `${i + 1}. ${s.t} | reqRef: ${s.r || '-'} | technique: ${s.k || '-'} | caseType: ${s.c || '-'} | testType: ${s.y || '-'} | source: ${s.s || '-'}`).join('\n');
+      const needsImages = hasMockups && batch.some(s => /mock/i.test(String(s.s || '')));
+      try{
+        const arr = parseJsonLoose(await callAI(detailSystem, `${reqText}\n\nScenario ที่ต้องเขียนรายละเอียด:\n${list}`, needsImages ? images : []), 'array');
+        return batch.map((s, i) => {
+          const d = (Array.isArray(arr) && arr[i]) || null;
+          return d ? Object.assign({ title: s.t, reqRef: s.r, technique: s.k, caseType: s.c, testType: s.y, source: s.s }, d) : null;
+        }).filter(Boolean);
+      }catch(e){ failedBatches++; return []; }
+      finally{ done += batch.length; setProgress(`เขียนรายละเอียดเคส ${Math.min(done, scenarios.length)}/${scenarios.length}...`); }
+    });
+
+    let added = 0;
+    results.flat().forEach(item => {
+      const key = normKey(item.title);
+      if(testCases.some(t => normKey(t.title) === key)) return;
+      testCases.push(newCaseObject(item)); added++;
+    });
+
+    reportVisible = true; render(); saveState();
+
+    const notes = [];
+    if(analysisRes.status !== 'fulfilled') notes.push('ส่วนสรุปวิเคราะห์ไม่สำเร็จ');
+    if(hasMockups && gapRes.status !== 'fulfilled') notes.push('Gap Analysis ไม่สำเร็จ');
+    if(areaFailed) notes.push(`ออกแบบ scenario ไม่สำเร็จ ${areaFailed} หัวข้อ`);
+    if(failedBatches) notes.push(`เขียนรายละเอียดไม่สำเร็จ ${failedBatches} กลุ่ม`);
+    if(!added) throw new Error('ไม่ได้เคสใหม่จาก AI' + (notes.length ? ' (' + notes.join(', ') + ')' : ''));
+    showSuccess(`สร้างแล้ว ${added} เคส (ระดับ ${D.label}) — รวม ${testCases.length} เคส` +
+      (notes.length ? ` · หมายเหตุ: ${notes.join(', ')} (กดสร้างอีกครั้งเพื่อเติม)` : ''));
+  }catch(err){
+    showError('สร้าง test case ไม่สำเร็จ: ' + err.message);
+  }finally{
+    genBtn.disabled = false;
+    genBtnLabel.textContent = 'สร้าง Test Case ด้วย AI';
+  }
+});
+
+// =====================================================================
+// Supabase (ไม่ต้อง Login) — ทุกคนที่เปิดหน้านี้เห็นข้อมูลชุดเดียวกัน
+// ใช้ได้เมื่อเปิดจากเว็บของตัวเอง (เช่น Netlify) หรือไฟล์ในเครื่อง
+// หน้าที่เผยแพร่บน claude.ai บล็อกการเรียกเว็บภายนอก จึงทำงานแบบออฟไลน์
+// =====================================================================
+const SUPABASE_URL = 'https://cnirqjoholhcgfzitrrc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_vA53q_VVIbJp2ZFg9eVrJg_LhqR-kmh';
+let supabaseClient = null;   // ห้ามตั้งชื่อ "supabase" — ชนกับ global ของไลบรารี CDN
+let appMode = 'local';       // 'local' | 'cloud'
+let rtChannel = null, rtProjectId = null;
+let localBackup = null;
+const knownProjectIds = new Set();
+
+const HISTORY_ACTION_LABEL = { created:'สร้างเคส', imported:'นำเข้าจาก Excel', status_changed:'เปลี่ยนสถานะ', approved:'Approve', approval_cancelled:'ยกเลิก Approve', edited:'แก้ไข', deleted:'ลบเคส' };
+const CASE_COLS = { title:'title', module:'module', reqRef:'req_ref', source:'source', technique:'technique', caseType:'case_type',
+  testType:'test_type', condition:'condition', preconditions:'preconditions', steps:'steps', testData:'test_data', expected:'expected',
+  actualResult:'actual_result', priority:'priority', severity:'severity', notes:'notes', depth:'depth', result:'result', remarks:'remarks' };
+
+function isCloud(){ return appMode === 'cloud' && !!supabaseClient; }
+function actorName(){ return (userName || '').slice(0, 60); }
+
+function caseToRow(tc){
+  const row = {};
+  for(const [k, col] of Object.entries(CASE_COLS)){
+    let v = tc[k];
+    if(k === 'steps') v = Array.isArray(v) ? v.map(String) : String(v || '').split('\n').filter(Boolean);
+    else v = v == null ? '' : String(v);
+    row[col] = v;
+  }
+  row.test_type = normTestType(tc.testType);
+  row.source = normSource(tc.source);
+  if(!['uat','qa','deep'].includes(row.depth)) row.depth = 'qa';
+  return row;
+}
+function rowToCase(r){
+  return normalizeCase({
+    id: r.id, dbId: r.id, num: r.num, title: r.title, module: r.module, reqRef: r.req_ref, source: r.source,
+    technique: r.technique, caseType: r.case_type, testType: r.test_type, condition: r.condition,
+    preconditions: r.preconditions, steps: r.steps || [], testData: r.test_data, expected: r.expected,
+    actualResult: r.actual_result, priority: r.priority, severity: r.severity, notes: r.notes, depth: r.depth,
+    origin: r.origin, result: r.result, remarks: r.remarks, dbFailCount: r.fail_count || 0, history: []
+  });
+}
+function casesOf(proj){ return proj.id === projectsData.activeProjectId ? testCases : (proj.testCases || []); }
+function setCasesOf(proj, arr){ proj.testCases = arr; if(proj.id === projectsData.activeProjectId) testCases = arr; }
+function remapCaseId(oldId, newId){
+  if(drawerId === oldId) drawerId = newId;
+  navOrder = navOrder.map(id => id === oldId ? newId : id);
+}
+function friendlyDbError(e){
+  const m = (e && (e.message || e.error_description)) || String(e || '');
+  if(e && e.code === 'PGRST116') return 'ไม่พบรายการนี้ในฐานข้อมูล (อาจถูกลบไปแล้ว)';
+  if(/row-level security|permission denied/i.test(m)) return 'ฐานข้อมูลยังไม่เปิดสิทธิ์แบบไม่ต้อง Login — รันไฟล์ qa-agent-supabase-no-login.sql ใน Supabase ก่อน';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'ติดต่อ Supabase ไม่ได้ ตรวจสอบอินเทอร์เน็ต';
+  if(/actor_name|delete_test_cases/i.test(m)) return 'ฐานข้อมูลยังไม่ได้อัปเดต — รันไฟล์ qa-agent-supabase-no-login.sql ใน Supabase ก่อน';
+  return m;
+}
+
+// ---------- render without stealing focus ----------
+let pendingRender = false;
+function isEditingField(){
+  const a = document.activeElement;
+  return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && (a.closest('#tcContainer') || a.closest('#drawer')));
+}
+function safeRender(){ if(isEditingField()) pendingRender = true; else { pendingRender = false; render(); } }
+document.addEventListener('focusout', () => setTimeout(() => { if(pendingRender && !isEditingField()){ pendingRender = false; render(); } }, 0));
+
+// ---------- status chip ----------
+function setCloudStatus(state, detail){
+  const dot = el('cloudDot'), label = el('cloudLabel');
+  dot.className = 'dot' + (state === 'saved' ? ' on' : state === 'saving' ? ' saving' : state === 'error' ? ' err' : '');
+  label.textContent = {
+    local: IN_CLAUDE ? 'ออฟไลน์ (claude.ai)' : 'ออฟไลน์ · กดเพื่อเชื่อมต่อ',
+    saving: detail || 'กำลังบันทึก...',
+    saved: 'Supabase · บันทึกแล้ว',
+    error: 'บันทึกไม่สำเร็จ'
+  }[state] || state;
+  el('cloudBtn').title = state === 'error' && detail ? detail
+    : state === 'local' ? (IN_CLAUDE ? 'หน้าบน claude.ai เชื่อม Supabase ไม่ได้ — เปิดจากเว็บของคุณหรือไฟล์ในเครื่อง' : 'คลิกเพื่อเชื่อมต่อ Supabase อีกครั้ง')
+    : 'ข้อมูลเก็บบน Supabase — ทุกคนที่เปิดลิงก์นี้เห็นข้อมูลชุดเดียวกัน';
+}
+el('cloudBtn').addEventListener('click', () => {
+  if(isCloud()) openNameModal(false);
+  else if(IN_CLAUDE) showError('หน้านี้เปิดอยู่บน claude.ai ซึ่งบล็อกการเชื่อมต่อภายนอก — เปิดจากเว็บของคุณ (เช่น Netlify) หรือไฟล์ .html ในเครื่องเพื่อใช้ Supabase');
+  else connectCloud();
+});
+
+async function connectCloud(){
+  if(!supabaseClient) return;
+  setCloudStatus('saving', 'กำลังเชื่อมต่อ Supabase...');
+  syncActiveProjectFromGlobals();
+  if(appMode !== 'cloud') localBackup = JSON.parse(JSON.stringify(projectsData));
+  try{
+    appMode = 'cloud';
+    await loadCloudProjects();
+    setCloudStatus('saved');
+  }catch(e){
+    appMode = 'local';
+    if(localBackup){ projectsData = localBackup; loadGlobalsFromActiveProject(); renderProjectSelector(); render(); }
+    setCloudStatus('local');
+    showError('เชื่อมต่อ Supabase ไม่สำเร็จ: ' + friendlyDbError(e) + ' — ใช้งานแบบออฟไลน์ (เก็บในเครื่องนี้) ไปก่อน');
+  }
+}
+
+async function loadCloudProjects(){
+  const [pr, st] = await Promise.all([
+    supabaseClient.from('projects').select('id, name, requirement, analysis, case_counter, created_at').order('created_at'),
+    supabaseClient.from('project_stats').select('project_id, total')
+  ]);
+  if(pr.error) throw pr.error;
+  const totals = Object.fromEntries(((st && st.data) || []).map(s => [s.project_id, s.total]));
+  knownProjectIds.clear();
+  const list = (pr.data || []).map(p => {
+    knownProjectIds.add(p.id);
+    const meta = { name: p.name, requirement: p.requirement || '', analysis: p.analysis || null };
+    return Object.assign({ id: p.id, dbId: p.id, counter: p.case_counter || 0, testCases: [], caseCount: totals[p.id] || 0,
+      _loaded: false, _snap: new Map(), _psnap: JSON.stringify(meta) }, meta);
+  });
+  const firstRun = !list.length;
+  if(firstRun) list.push({ id: genId('proj'), name: 'โปรเจกต์ 1', requirement: '', analysis: null, counter: 0, testCases: [], _loaded: true, _snap: new Map() });
+  const want = store.get('qa-cloud-active');
+  projectsData = { projects: list, activeProjectId: list.some(p => p.id === want) ? want : list[0].id };
+  const active = getActiveProject();
+  if(active.dbId) await loadProjectCases(active, true);
+  loadGlobalsFromActiveProject(); resetPanelsOnProjectSwitch(); renderProjectSelector(); render();
+  subscribeRealtime();
+  if(firstRun) scheduleSync();
+}
+
+async function loadProjectCases(proj, quiet){
+  const { data, error } = await supabaseClient.from('test_cases_view').select('*').eq('project_id', proj.dbId).order('num');
+  if(error){ if(quiet) throw error; showError('โหลดเคสไม่สำเร็จ: ' + friendlyDbError(error)); return; }
+  const list = (data || []).map(rowToCase);
+  proj._snap = new Map(list.map(t => [t.dbId, caseToRow(t)]));
+  proj._loaded = true;
+  proj.counter = Math.max(proj.counter || 0, 0, ...list.map(t => t.num));
+  setCasesOf(proj, list);
+  if(proj.id === projectsData.activeProjectId) counter = proj.counter;
+  if(!quiet){ renderProjectSelector(); safeRender(); }
+}
+
+async function ensureActive(){
+  if(!isCloud()) return;
+  const p = getActiveProject(); if(!p) return;
+  store.set('qa-cloud-active', p.id);
+  if(p.dbId && !p._loaded && !p._loading){
+    p._loading = true;
+    try{ await loadProjectCases(p); } finally{ p._loading = false; }
+  }
+  if(p.dbId && rtProjectId !== p.dbId) subscribeRealtime();
+}
+
+// ---------- save (diff → Supabase) ----------
+let syncing = false, syncAgain = false, syncTimer = null;
+function scheduleSync(){
+  clearTimeout(syncTimer);
+  setCloudStatus('saving');
+  syncTimer = setTimeout(() => { syncTimer = null; syncToCloud(); }, 500);
+}
+async function syncToCloud(){
+  if(!isCloud()) return;
+  if(syncing){ syncAgain = true; return; }
+  syncing = true;
+  let changedIds = false, err = null;
+  try{
+    syncActiveProjectFromGlobals();
+    const present = new Set(projectsData.projects.map(p => p.dbId).filter(Boolean));
+    for(const id of [...knownProjectIds]){
+      if(present.has(id)) continue;
+      knownProjectIds.delete(id);
+      const { error } = await supabaseClient.from('projects').delete().eq('id', id);
+      if(error){ err = friendlyDbError(error); await loadCloudProjects(); return; }
+    }
+    for(const proj of projectsData.projects){
+      const meta = { name: proj.name, requirement: proj.requirement || '', analysis: proj.analysis || null };
+      const ps = JSON.stringify(meta);
+      if(!proj.dbId){
+        const { data, error } = await supabaseClient.from('projects').insert(meta).select('id').single();
+        if(error){ err = friendlyDbError(error); continue; }
+        const oldId = proj.id;
+        proj.id = proj.dbId = data.id; proj._psnap = ps; proj._loaded = true;
+        knownProjectIds.add(data.id);
+        if(projectsData.activeProjectId === oldId) projectsData.activeProjectId = data.id;
+        changedIds = true;
+      } else if(proj._psnap !== ps){
+        const { error } = await supabaseClient.from('projects').update(meta).eq('id', proj.dbId);
+        proj._psnap = ps;
+        if(error) err = friendlyDbError(error);
+      }
+      if(proj._loaded){
+        const r = await syncCases(proj);
+        if(r.err) err = r.err;
+        if(r.changedIds) changedIds = true;
+      }
+    }
+  }catch(e){ err = friendlyDbError(e); }
+  finally{
+    syncing = false;
+    setCloudStatus(err ? 'error' : 'saved', err);
+    if(err) showError('บันทึกขึ้น Supabase ไม่สำเร็จ: ' + err);
+    if(changedIds){ renderProjectSelector(); safeRender(); ensureActive(); }
+    if(syncAgain){ syncAgain = false; scheduleSync(); }
+  }
+}
+
+async function syncCases(proj){
+  let err = null, changedIds = false;
+  if(!(proj._snap instanceof Map)) proj._snap = new Map();
+  const snap = proj._snap;
+  const list = casesOf(proj);
+
+  // ลบ (ผ่าน RPC เพื่อบันทึกชื่อผู้ลบลงประวัติ)
+  const alive = new Set(list.filter(t => t.dbId).map(t => t.dbId));
+  const gone = [...snap.keys()].filter(id => !alive.has(id));
+  if(gone.length){
+    gone.forEach(id => snap.delete(id));
+    const { error } = await supabaseClient.rpc('delete_test_cases', { p_ids: gone, p_actor: actorName() });
+    if(error){ err = friendlyDbError(error); await loadProjectCases(proj); return { err, changedIds: true }; }
+  }
+
+  // เพิ่มใหม่ (ฐานข้อมูลเป็นผู้กำหนดเลข TC)
+  const fresh = list.filter(t => !t.dbId);
+  if(fresh.length){
+    const rows = fresh.map(t => Object.assign(caseToRow(t), { project_id: proj.dbId, num: 0, origin: t.origin || 'ai', actor_name: actorName() }));
+    const { data, error } = await supabaseClient.from('test_cases').insert(rows).select('id, num');
+    if(error){
+      err = friendlyDbError(error);
+      setCasesOf(proj, casesOf(proj).filter(t => !fresh.includes(t)));
+      changedIds = true;
+    } else {
+      data.forEach((r, i) => {
+        const t = fresh[i], oldId = t.id;
+        t.id = t.dbId = r.id; t.num = r.num;
+        remapCaseId(oldId, r.id);
+        const s = Object.assign({}, rows[i]);
+        delete s.project_id; delete s.num; delete s.origin; delete s.actor_name;
+        snap.set(r.id, s);
+      });
+      changedIds = true;
+    }
+  }
+
+  // แก้ไข (ส่งเฉพาะคอลัมน์ที่เปลี่ยน)
+  for(const t of casesOf(proj)){
+    if(!t.dbId || !snap.has(t.dbId)) continue;
+    const now = caseToRow(t), before = snap.get(t.dbId), diff = {};
+    for(const k of Object.keys(now)) if(JSON.stringify(now[k]) !== JSON.stringify(before[k])) diff[k] = now[k];
+    if(!Object.keys(diff).length) continue;
+    diff.actor_name = actorName();
+    const { error } = await supabaseClient.from('test_cases').update(diff).eq('id', t.dbId).select('id').single();
+    if(error){
+      err = friendlyDbError(error);
+      await refreshCase(proj, t.dbId, true);
+      changedIds = true;
+      continue;
+    }
+    snap.set(t.dbId, now);
+  }
+  return { err, changedIds };
+}
+
+async function refreshCase(proj, id, force){
+  const { data } = await supabaseClient.from('test_cases_view').select('*').eq('id', id).maybeSingle();
+  const list = casesOf(proj);
+  const local = list.find(t => t.dbId === id);
+  if(!data){ if(local){ setCasesOf(proj, list.filter(t => t !== local)); proj._snap.delete(id); } if(!force) safeRender(); return; }
+  const fresh = rowToCase(data);
+  if(local) Object.assign(local, fresh); else list.push(fresh);
+  proj._snap.set(id, caseToRow(local || fresh));
+  if(!force) safeRender();
+}
+
+// ---------- realtime: เห็นการเปลี่ยนแปลงของเพื่อนร่วมทีมทันที ----------
+function subscribeRealtime(){
+  if(!isCloud()) return;
+  if(rtChannel){ supabaseClient.removeChannel(rtChannel); rtChannel = null; rtProjectId = null; }
+  const proj = getActiveProject();
+  if(!proj || !proj.dbId) return;
+  rtProjectId = proj.dbId;
+  rtChannel = supabaseClient.channel('qa-' + proj.dbId)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'test_cases', filter: 'project_id=eq.' + proj.dbId }, p => onRealtime(proj, p))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'test_cases', filter: 'project_id=eq.' + proj.dbId }, p => onRealtime(proj, p))
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'test_cases' }, p => onRealtime(proj, p))
+    .subscribe();
+}
+function onRealtime(proj, payload){
+  if(!isCloud() || rtProjectId !== proj.dbId) return;
+  if(syncing || syncTimer){ setTimeout(() => onRealtime(proj, payload), 1200); return; }
+  const id = (payload.new && payload.new.id) || (payload.old && payload.old.id);
+  if(!id) return;
+  if(payload.eventType === 'DELETE'){
+    if(!proj._snap.has(id)) return;
+    proj._snap.delete(id);
+    setCasesOf(proj, casesOf(proj).filter(t => t.dbId !== id));
+    if(drawerId === id) closeDrawer();
+    safeRender();
+    return;
+  }
+  const local = casesOf(proj).find(t => t.dbId === id);
+  if(local && JSON.stringify(caseToRow(local)) !== JSON.stringify(proj._snap.get(id))) return;
+  refreshCase(proj, id);
+}
+
+// ---------- history from DB ----------
+async function loadCloudHistory(tc){
+  const { data, error } = await supabaseClient.from('test_case_history')
+    .select('action, detail, actor_name, created_at').eq('test_case_id', tc.dbId).order('id', { ascending: false }).limit(200);
+  if(error) throw error;
+  return (data || []).map(h => ({ at: h.created_at, by: h.actor_name, action: HISTORY_ACTION_LABEL[h.action] || h.action, detail: h.detail }));
+}
+async function loadCloudProjectHistory(proj){
+  const { data } = await supabaseClient.from('test_case_history')
+    .select('test_case_id, action, detail, actor_name, created_at').eq('project_id', proj.dbId).order('id');
+  const map = new Map();
+  (data || []).forEach(h => {
+    if(!h.test_case_id) return;
+    if(!map.has(h.test_case_id)) map.set(h.test_case_id, []);
+    map.get(h.test_case_id).push({ at: h.created_at, by: h.actor_name, action: HISTORY_ACTION_LABEL[h.action] || h.action, detail: h.detail });
+  });
+  return map;
+}
+
+// ---------- ย้ายโปรเจกต์ในเครื่องขึ้น Supabase ----------
+el('migrateBtn').addEventListener('click', () => {
+  const src = ((localBackup && localBackup.projects) || []).filter(p => (p.testCases || []).length || (p.requirement || '').trim());
+  if(!src.length) return;
+  if(!confirm(`อัปโหลด ${src.length} โปรเจกต์จากเครื่องนี้ขึ้น Supabase?\nทุกคนที่เปิดลิงก์นี้จะเห็นโปรเจกต์เหล่านี้`)) return;
+  syncActiveProjectFromGlobals();
+  src.forEach(p => {
+    const cases = (p.testCases || []).map(c => {
+      const t = normalizeCase(JSON.parse(JSON.stringify(c)));
+      delete t.dbId; t.id = genId('tc'); t.origin = 'import'; t.history = []; t.dbFailCount = 0;
+      return t;
+    }).sort((a, b) => a.num - b.num);
+    projectsData.projects.push({ id: genId('proj'), name: p.name + ' (จากเครื่อง)', requirement: p.requirement || '', analysis: p.analysis || null,
+      counter: 0, testCases: cases, _loaded: true, _snap: new Map() });
+  });
+  store.set('qa-migrated', '1');
+  nameModal.classList.remove('open');
+  saveState();
+  showSuccess(`กำลังอัปโหลด ${src.length} โปรเจกต์ขึ้น Supabase — เลือกดูได้จากรายการโปรเจกต์`);
+});
+
+async function initCloud(){
+  setCloudStatus('local');
+  if(!IN_CLAUDE && window.supabase && typeof window.supabase.createClient === 'function'){
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+    await connectCloud();
+  } else if(!IN_CLAUDE){
+    showError('โหลดไลบรารี Supabase ไม่สำเร็จ — ใช้งานแบบออฟไลน์ (เก็บในเครื่องนี้)');
+  }
+  if(!userName) openNameModal(true);
+}
+
+// ---------- init ----------
+userName = store.get(USER_KEY) || '';
+renderUser();
+renderDepth();
+updateConfigDot();
+loadState();
+initCloud();
+</script>
+</body>
+</html>
